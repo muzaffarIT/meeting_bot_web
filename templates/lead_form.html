@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Новый клиент</h1>
+    <p class="muted">Создание новой встречи и генерация ссылки в Telegram-бота.</p>
+  </div>
+</div>
+
+<div class="card">
+  <form method="post" action="/leads/new" class="form-grid two-cols">
+    <label>
+      Имя родителя
+      <input type="text" name="parent_name" required placeholder="Введите имя родителя">
+    </label>
+
+    <label>
+      Телефон родителя
+      <input type="text" name="parent_phone" required placeholder="998901234567">
+    </label>
+
+    <label>
+      Дата встречи
+      <input type="date" name="meeting_date" required>
+    </label>
+
+    <label>
+      Время встречи
+      <input type="time" name="meeting_time" required>
+    </label>
+
+    <label>
+      Ответственный менеджер
+      <select name="manager_login" required>
+        {% for manager in managers %}
+          <option value="{{ manager.login }}">
+            {{ manager.full_name }} ({{ manager.login }})
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Язык
+      <select name="language">
+        <option value="ru">Русский</option>
+        <option value="uz">O'zbekcha</option>
+      </select>
+    </label>
+
+    <label class="full">
+      Заметки
+      <textarea name="notes" placeholder="Дополнительная информация по клиенту"></textarea>
+    </label>
+
+    <button type="submit" class="full">Создать клиента</button>
+  </form>
+</div>
+
+{% endblock %}

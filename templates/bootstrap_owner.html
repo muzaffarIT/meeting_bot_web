@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card narrow">
+  <h2>Назначить владельца</h2>
+  <p class="muted">
+    В системе ещё нет владельца. Нажми кнопку, чтобы назначить владельцем текущий аккаунт: <b>{{ user.login }}</b>.
+  </p>
+  <form method="post" action="/bootstrap-owner">
+    <button type="submit">Сделать меня владельцем</button>
+  </form>
+</div>
+{% endblock %}

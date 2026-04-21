@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Клиент {{ lead.lead_id }}</h1>
+    <p class="muted">
+      Карточка клиента, встреча, результат и ссылка для перехода в Telegram-бота.
+    </p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+  <div class="section-title">Основная информация</div>
+
+  <div class="kv">
+    <div class="kv-row">
+      <div class="kv-key">Клиент</div>
+      <div class="kv-value">{{ lead.parent_name }} / {{ lead.parent_phone }}</div>
+    </div>
+
+    <div class="kv-row">
+      <div class="kv-key">Менеджер</div>
+      <div class="kv-value">{{ lead.manager_name }}{% if lead.manager_login %} ({{ lead.manager_login }}){% endif %}</div>
+    </div>
+
+    <div class="kv-row">
+      <div class="kv-key">Ссылка в бот</div>
+      <div class="kv-value" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <a href="{{ deep_link }}" target="_blank" id="bot-link" style="word-break: break-all;">{{ deep_link }}</a>
+        <button type="button" id="copy-link-btn" onclick="copyBotLink()" title="Скопировать ссылку" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; font-size: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); cursor: pointer; transition: 0.2s; white-space: nowrap;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Скопировать
+        </button>
+      </div>
+    </div>
+<script>
+function copyBotLink() {
+  const link = document.getElementById('bot-link').href;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('copy-link-btn');
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Скопировано!';
+    btn.style.borderColor = 'var(--success-text, #00b894)';
+    btn.style.color = 'var(--success-text, #00b894)';
+    setTimeout(() => {
+      btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Скопировать';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--text-2)';
+    }, 2000);
+  }).catch(() => {
+    // fallback for older browsers
+    const el = document.createElement('textarea');
+    el.value = document.getElementById('bot-link').href;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+  });
+}
+</script>
+
+    <div class="kv-row">
+      <div class="kv-key">Бот</div>
+      <div class="kv-value">
+        {% if lead.bot_started == 'ДА' %}
+          <span class="badge badge-success">Клиент зашел в бота</span>
+        {% else %}
+          <span class="badge badge-neutral">Еще не заходил</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="kv-row">
+      <div class="kv-key">Подтверждение</div>
+      <div class="kv-value">
+        {% if lead.confirmed == 'ДА' %}
+          <span class="badge badge-primary">Встреча подтверждена</span>
+        {% else %}
+          <span class="badge badge-warning">Ожидает подтверждения</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px;">
+  <div class="section-title">Перенос встречи</div>
+  <p class="muted">
+    Если изменить дату или время встречи, напоминания будут сброшены и пересчитаются заново.
+  </p>
+
+  <form method="post" action="/leads/{{ lead.lead_id }}/meeting" class="form-grid two-cols">
+    <label>
+      Дата встречи
+      <input type="date" name="meeting_date" value="{{ lead.meeting_date }}" required>
+    </label>
+
+    <label>
+      Время встречи
+      <input type="time" name="meeting_time" value="{{ lead.meeting_time }}" required>
+    </label>
+
+    <label class="full">
+      Статус встречи
+      <select name="status">
+        {% for item in status_choices %}
+          <option value="{{ item }}" {% if item == lead.status %}selected{% endif %}>
+            {{ status_labels.get(item, item) }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button type="submit" class="full">Сохранить дату и время</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="section-title">Результат встречи</div>
+  <p class="muted">
+    Если поставить «Купил = ДА», клиент автоматически будет считаться пришедшим.
+  </p>
+
+  <form method="post" action="/leads/{{ lead.lead_id }}/result" class="form-grid two-cols">
+    <label>
+      Клиент пришел
+      <select name="arrived">
+        <option value="НЕТ" {% if lead.arrived == 'НЕТ' %}selected{% endif %}>НЕТ</option>
+        <option value="ДА" {% if lead.arrived == 'ДА' %}selected{% endif %}>ДА</option>
+      </select>
+    </label>
+
+    <label>
+      Купил
+      <select name="bought">
+        <option value="НЕТ" {% if lead.bought == 'НЕТ' %}selected{% endif %}>НЕТ</option>
+        <option value="ДА" {% if lead.bought == 'ДА' %}selected{% endif %}>ДА</option>
+      </select>
+    </label>
+
+    <label class="full">
+      Заметки
+      <textarea name="notes">{{ lead.notes }}</textarea>
+    </label>
+
+    <button type="submit" class="full">Сохранить результат</button>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom: 20px; border-left: 3px solid #6c5ce7;">
+  <!-- Header row -->
+  <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c5ce7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <span class="section-title" style="margin: 0;">Переписка с клиентом</span>
+    </div>
+    {% if chat_messages %}
+      <span style="font-size:12px; color: var(--text-3);">{{ chat_messages|length }} сообщений</span>
+    {% else %}
+      <span style="font-size:12px; color: var(--text-3);">Сообщений пока нет</span>
+    {% endif %}
+    <div style="margin-left: auto;">
+      <a href="/inbox" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid #6c5ce7; color: #6c5ce7; font-size: 12px; font-weight: 600; text-decoration: none; transition: 0.2s;" onmouseover="this.style.background='rgba(108,92,231,0.1)'" onmouseout="this.style.background='transparent'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        История
+      </a>
+    </div>
+  </div>
+
+  {% if msg_success is defined and msg_success %}
+    <div style="background: rgba(0,184,148,0.15); border: 1px solid #00b894; color: #00b894; padding: 10px 16px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 13px;">{{ msg_success }}</div>
+  {% endif %}
+  {% if msg_error is defined and msg_error %}
+    <div style="background: rgba(253,121,168,0.15); border: 1px solid #fd79a8; color: #fd79a8; padding: 10px 16px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 13px;">{{ msg_error }}</div>
+  {% endif %}
+
+  {% if bot_started %}
+    <!-- Write message form -->
+    <form method="post" action="/leads/{{ lead.lead_id }}/send_message" style="display: flex; gap: 10px; align-items: flex-end;">
+      <label style="flex: 1; margin: 0;">
+        <textarea name="message" placeholder="Написать клиенту…" rows="2" required
+          style="resize: none; width: 100%; margin: 0; border-radius: var(--radius-sm);"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.closest('form').submit();}"></textarea>
+      </label>
+      <button type="submit" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe); padding: 10px 18px; white-space: nowrap; flex-shrink: 0; border-radius: var(--radius-sm);">
+        Отправить ↑
+      </button>
+    </form>
+    <p class="muted" style="font-size: 11px; margin-top: 6px;">Enter — отправить · Shift+Enter — новая строка</p>
+  {% else %}
+    <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(253,121,168,0.08); border: 1px solid rgba(253,121,168,0.3); border-radius: var(--radius-sm);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fd79a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <div>
+        <div style="font-size: 13px; font-weight: 600; color: #fd79a8;">Клиент ещё не запустил бота</div>
+        <div style="font-size: 12px; color: var(--text-3); margin-top: 2px;">Отправьте клиенту ссылку выше — после запуска бота здесь появится поле для переписки.</div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-bottom: 20px; border-left: 3px solid #00cec9;">
+  <div class="section-title" style="display:flex; align-items:center; gap:8px;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00cec9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    Повторная запись
+  </div>
+  <p class="muted" style="font-size: 13px; margin-bottom: 15px;">
+    Создать нового лида на основе этого клиента. Данные клиента и менеджера скопируются, а встреча, статус и бот-данные будут сброшены. После создания вы сможете назначить новую дату.
+  </p>
+  <form method="post" action="/leads/{{ lead.lead_id }}/clone">
+    <button type="submit" style="background: linear-gradient(135deg, #00b894, #00cec9); min-width: 200px;">
+      🔄 Создать повтор
+    </button>
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Лиды</h1>
+<form method="get" class="filters">
+  <input type="search" name="q" value="{{ current_q }}" placeholder="Поиск (Имя, тел., менеджер)...">
+  <select name="status">
+    <option value="">Все статусы</option>
+    {% for item in status_choices %}
+      <option value="{{ item }}" {% if item == current_status %}selected{% endif %}>
+  {{ status_labels.get(item, item) }}
+</option>
+    {% endfor %}
+  </select>
+  <input type="date" name="day" value="{{ current_day }}">
+  <button type="submit">Фильтровать</button>
+  <a href="/leads/export?status={{ current_status }}&day={{ current_day }}&q={{ current_q }}" class="btn" style="background: linear-gradient(135deg, #00b894, #00cec9);">Экспорт CSV</a>
+</form>
+<div class="card table-responsive">
+  <table>
+    <tr>
+      <th style="width: 30px;"><input type="checkbox" id="selectAll"></th>
+      <th>ID</th><th>Родитель</th><th>Менеджер</th><th>Дата</th><th>Время</th><th>Статус</th><th>Бот</th><th>Подтв.</th>
+    </tr>
+    {% for lead in leads %}
+    <tr>
+      <td><input type="checkbox" class="lead-cb" value="{{ lead.lead_id }}"></td>
+      <td><a href="/leads/{{ lead.lead_id }}">{{ lead.lead_id }}</a></td>
+      <td>
+        <div>{{ lead.parent_name }}</div>
+        <div class="muted">
+          {% if lead.parent_phone %}
+            <a href="tel:{{ lead.parent_phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}">{{ lead.parent_phone }}</a>
+          {% else %}
+            —
+          {% endif %}
+        </div>
+      </td>
+      <td>
+        <div>{{ lead.manager_name }}</div>
+        <div class="muted">{{ lead.manager_login }}</div>
+      </td>
+      <td>{{ lead.meeting_date }}</td>
+      <td>{{ lead.meeting_time }}</td>
+      <td>
+        <select class="ajax-status" data-id="{{ lead.lead_id }}" style="padding: 2px 5px; font-size: 11.5px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); outline: none;">
+          {% for st in status_choices %}
+            <option value="{{ st }}" {% if st == lead.status %}selected{% endif %}>{{ status_labels.get(st, st) }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td>{{ lead.bot_started }}</td>
+      <td>{{ lead.confirmed }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div id="bulk-panel" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border-accent); padding: 15px 25px; border-radius: 50px; box-shadow: var(--sh-lg); z-index: 1000; align-items: center; gap: 15px;">
+  <span id="bulk-count" style="font-weight: 600;">Выбрано: 0</span>
+  <select id="bulk-status" style="min-height: 34px; padding: 0 10px; border-radius: 20px;">
+    <option value="">Сменить статус на...</option>
+    {% for st in status_choices %}
+      <option value="{{ st }}">{{ status_labels.get(st, st) }}</option>
+    {% endfor %}
+  </select>
+  <button id="bulk-apply" class="btn btn-sm btn-primary" style="border-radius: 20px;">Применить</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // AJAX Смена статуса
+  document.querySelectorAll('.ajax-status').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const el = e.target;
+      const originalValue = el.getAttribute('data-initial') || Array.from(el.options).find(o => o.defaultSelected)?.value;
+      
+      const res = await fetch(`/api/leads/${el.dataset.id}/status`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: el.value})
+      });
+      if (!res.ok) {
+        alert('Ошибка изменения статуса!');
+        el.value = originalValue;
+      } else {
+        el.setAttribute('data-initial', el.value);
+        el.style.borderColor = 'var(--success-text)';
+        setTimeout(() => el.style.borderColor = 'var(--border)', 1000);
+      }
+    });
+  });
+
+  // Table Sorting logic (click on th)
+  const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+  const comparer = (idx, asc) => (a, b) => ((v1, v2) => 
+    v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+    )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+  document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+    // skip sorting for checkbox col
+    if(th.cellIndex === 0) return;
+    const table = th.closest('table');
+    const tbody = table.querySelector('tbody') || table;
+    Array.from(tbody.querySelectorAll('tr:nth-child(n+2)'))
+      .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+      .forEach(tr => tbody.appendChild(tr));
+  })));
+
+  // Bulk actions logic
+  const selectAll = document.getElementById('selectAll');
+  const checkboxes = document.querySelectorAll('.lead-cb');
+  const panel = document.getElementById('bulk-panel');
+  const cntText = document.getElementById('bulk-count');
+  
+  const updatePanel = () => {
+    const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+    if(selected.length > 0) {
+      cntText.textContent = `Выбрано: ${selected.length}`;
+      panel.style.display = 'flex';
+    } else {
+      panel.style.display = 'none';
+      selectAll.checked = false;
+    }
+  };
+
+  if(selectAll) {
+    selectAll.addEventListener('change', (e) => {
+      checkboxes.forEach(c => c.checked = e.target.checked);
+      updatePanel();
+    });
+  }
+  checkboxes.forEach(c => c.addEventListener('change', updatePanel));
+
+  document.getElementById('bulk-apply')?.addEventListener('click', async () => {
+    const status = document.getElementById('bulk-status').value;
+    if(!status) return alert('Выберите статус!');
+    const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+    
+    document.getElementById('bulk-apply').textContent = '...';
+    const res = await fetch('/api/leads/bulk-status', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({lead_ids: selected, status})
+    });
+    if(res.ok) {
+      window.location.reload();
+    } else {
+      alert('Ошибка при массовом обновлении');
+      document.getElementById('bulk-apply').textContent = 'Применить';
+    }
+  });
+
+});
+</script>
+
+{% endblock %}

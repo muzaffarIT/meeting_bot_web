@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+.inbox-wrap {
+  display: flex;
+  height: calc(100vh - 130px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.inbox-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.inbox-sidebar-header {
+  padding: 16px;
+  font-weight: 700;
+  font-size: 15px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-3);
+}
+.inbox-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.inbox-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+.inbox-item:hover, .inbox-item.active {
+  background: var(--surface-3);
+}
+.inbox-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.inbox-item-info { flex: 1; min-width: 0; }
+.inbox-item-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inbox-item-preview { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.inbox-item-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.inbox-item-time { font-size: 11px; color: var(--text-3); }
+.inbox-unread-badge { background: #6c5ce7; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+
+.inbox-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.inbox-chat-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.inbox-chat-header a { font-size: 12px; color: var(--text-3); text-decoration: none; margin-left: auto; }
+.inbox-chat-header a:hover { color: var(--text); }
+.inbox-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface-1);
+}
+.msg-row { display: flex; flex-direction: column; }
+.msg-row.out { align-items: flex-end; }
+.msg-row.in { align-items: flex-start; }
+.msg-sender { font-size: 10px; color: var(--text-3); margin-bottom: 3px; padding: 0 6px; }
+.msg-bubble {
+  max-width: 72%;
+  padding: 9px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+  box-shadow: var(--sh-sm);
+}
+.msg-row.out .msg-bubble { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff; border-radius: 16px 16px 4px 16px; }
+.msg-row.in .msg-bubble { background: var(--surface-3); color: var(--text); border-radius: 16px 16px 16px 4px; }
+.msg-time { font-size: 10px; color: var(--text-3); margin-top: 3px; padding: 0 6px; }
+.inbox-chat-input {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  background: var(--surface-2);
+}
+.inbox-chat-input textarea {
+  flex: 1; resize: none; min-height: 40px; max-height: 120px; margin: 0; padding: 10px 14px;
+  border-radius: 20px; font-size: 13.5px;
+}
+.inbox-chat-input button {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+}
+.inbox-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--text-3); gap: 12px;
+}
+</style>
+
+<div class="inbox-wrap">
+  <!-- Left: conversation list -->
+  <div class="inbox-sidebar">
+    <div class="inbox-sidebar-header">💬 Входящие{% if threads %} <span style="color:var(--text-3);font-weight:400;font-size:13px;">({{ threads|length }})</span>{% endif %}</div>
+    <div class="inbox-list">
+      {% if threads %}
+        {% for t in threads %}
+        <div class="inbox-item {% if selected_lead_id == t.lead_id %}active{% endif %}" onclick="loadChat('{{ t.lead_id }}', '{{ t.parent_name|e }}', '{{ t.parent_phone|e }}')">
+          <div class="inbox-avatar">{{ t.parent_name[0]|upper if t.parent_name else '?' }}</div>
+          <div class="inbox-item-info">
+            <div class="inbox-item-name">{{ t.parent_name or 'Без имени' }}</div>
+            <div class="inbox-item-preview">{% if t.last_direction == 'out' %}Вы: {% endif %}{{ t.last_text }}</div>
+          </div>
+          <div class="inbox-item-meta">
+            <div class="inbox-item-time">{{ t.last_time }}</div>
+            {% if t.unread %}<div class="inbox-unread-badge">{{ t.unread }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;">Переписок пока нет</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: chat area -->
+  <div class="inbox-chat" id="chat-panel">
+    <div class="inbox-empty" id="chat-empty">
+      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <div>Выберите переписку слева</div>
+    </div>
+
+    <div id="chat-view" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+      <div class="inbox-chat-header">
+        <div class="inbox-avatar" id="chat-avatar" style="width:36px;height:36px;font-size:14px;">?</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;" id="chat-name">—</div>
+          <div style="font-size:11px;color:var(--text-3);" id="chat-phone">—</div>
+        </div>
+        <a href="#" id="chat-card-link" target="_blank">Открыть карточку →</a>
+      </div>
+
+      <div class="inbox-messages" id="chat-messages"></div>
+
+      <form class="inbox-chat-input" id="chat-form" onsubmit="sendMsg(event)">
+        <textarea id="chat-input" placeholder="Написать сообщение…" rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg(event);}"></textarea>
+        <button type="submit">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentLeadId = null;
+
+async function loadChat(leadId, name, phone) {
+  currentLeadId = leadId;
+
+  // Update header
+  document.getElementById('chat-avatar').textContent = name ? name[0].toUpperCase() : '?';
+  document.getElementById('chat-name').textContent = name || 'Без имени';
+  document.getElementById('chat-phone').textContent = phone || '';
+  document.getElementById('chat-card-link').href = '/leads/' + leadId;
+  document.getElementById('chat-empty').style.display = 'none';
+  const view = document.getElementById('chat-view');
+  view.style.display = 'flex';
+  view.style.flex = '1';
+  view.style.flexDirection = 'column';
+  view.style.overflow = 'hidden';
+
+  // Highlight sidebar item
+  document.querySelectorAll('.inbox-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  // Remove unread badge
+  const badge = event.currentTarget.querySelector('.inbox-unread-badge');
+  if (badge) badge.remove();
+
+  // Load messages
+  await refreshMessages();
+  document.getElementById('chat-input').focus();
+}
+
+async function refreshMessages() {
+  if (!currentLeadId) return;
+  const res = await fetch('/api/messages/' + currentLeadId);
+  if (!res.ok) return;
+  const data = await res.json();
+  renderMessages(data.messages || []);
+}
+
+function renderMessages(msgs) {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '';
+  for (const msg of msgs) {
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + (msg.direction === 'out' ? 'out' : 'in');
+    const time = msg.created_at ? msg.created_at.substring(11, 16) : '';
+    row.innerHTML = `
+      <div class="msg-sender">${msg.sender}</div>
+      <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+      <div class="msg-time">${time}</div>
+    `;
+    container.appendChild(row);
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function sendMsg(e) {
+  e.preventDefault();
+  if (!currentLeadId) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.disabled = true;
+
+  const res = await fetch('/leads/' + currentLeadId + '/send_message', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'message=' + encodeURIComponent(text)
+  });
+  input.disabled = false;
+  await refreshMessages();
+  input.focus();
+}
+
+// Auto-refresh every 10 seconds when chat is open
+setInterval(() => { if (currentLeadId) refreshMessages(); }, 10000);
+</script>
+
+{% endblock %}

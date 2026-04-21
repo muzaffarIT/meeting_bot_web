@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>
+      {% if edit_user %}
+        Сотрудник: {{ edit_user.login }}
+      {% else %}
+        Новый сотрудник
+      {% endif %}
+    </h1>
+    <p class="muted">
+      {% if edit_user %}
+        Редактирование данных сотрудника.
+      {% else %}
+        Создание менеджера, администратора или владельца системы.
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="card narrow">
+  {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+
+  <form
+    method="post"
+    action="{% if edit_user %}/users/{{ edit_user.login }}/edit{% else %}/users/new{% endif %}"
+    class="form-grid"
+  >
+    <label>
+      Логин
+      <input
+        type="text"
+        name="login"
+        required
+        placeholder="например: manager1"
+        value="{{ edit_user.login if edit_user else '' }}"
+        {% if edit_user %}readonly{% endif %}
+      >
+    </label>
+
+    <label>
+      ФИО
+      <input
+        type="text"
+        name="full_name"
+        required
+        placeholder="Введите ФИО"
+        value="{{ edit_user.full_name if edit_user else '' }}"
+      >
+    </label>
+
+    <label>
+      Роль
+      <select name="role" required>
+        {% for role in allowed_roles %}
+          <option
+            value="{{ role }}"
+            {% if edit_user and role == edit_user.role %}selected{% endif %}
+          >
+            {% if role == 'owner' %}
+              Владелец
+            {% elif role == 'admin' %}
+              Администратор
+            {% else %}
+              Менеджер
+            {% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Телефон
+      <input
+        type="text"
+        name="phone"
+        placeholder="998901234567"
+        value="{{ edit_user.phone if edit_user else '' }}"
+      >
+    </label>
+
+    <label>
+      Telegram
+      <input
+        type="text"
+        name="telegram"
+        placeholder="username без @"
+        value="{% if edit_user and edit_user.telegram %}{{ edit_user.telegram.lstrip('@') }}{% endif %}"
+      >
+    </label>
+
+    <label>
+      Пароль
+      <input
+        type="password"
+        name="password"
+        {% if not edit_user %}required{% endif %}
+        placeholder="{% if edit_user %}Оставьте пустым, чтобы не менять{% else %}Введите пароль{% endif %}"
+      >
+    </label>
+
+    <label>
+      Активен
+      <select name="active">
+        <option value="ДА" {% if (not edit_user) or (edit_user and edit_user.active == 'ДА') %}selected{% endif %}>ДА</option>
+        <option value="НЕТ" {% if edit_user and edit_user.active == 'НЕТ' %}selected{% endif %}>НЕТ</option>
+      </select>
+    </label>
+
+    <button type="submit">
+      {% if edit_user %}
+        Сохранить изменения
+      {% else %}
+        Создать сотрудника
+      {% endif %}
+    </button>
+  </form>
+</div>
+
+{% endblock %}

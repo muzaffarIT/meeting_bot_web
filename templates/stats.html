@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Статистика по клиентам</h1>
+<div class="stats-grid">
+  <div class="card stat"><div class="stat-num">{{ global_stats.total }}</div><div>Всего лидов</div></div>
+  <div class="card stat"><div class="stat-num">{{ global_stats.bot_started }}</div><div>Зашли в бота</div></div>
+  <div class="card stat"><div class="stat-num">{{ global_stats.confirmed }}</div><div>Подтвердили</div></div>
+  <div class="card stat"><div class="stat-num">{{ global_stats.arrived }}</div><div>Пришли</div></div>
+  <div class="card stat"><div class="stat-num">{{ global_stats.bought }}</div><div>Купили</div></div>
+</div>
+<div class="card">
+  <table>
+    <tr><th>Сотрудник</th><th>Клиенты</th><th>Start</th><th>Подтвердили</th><th>Пришли</th><th>Купили</th></tr>
+    {% for row in per_manager %}
+    <tr>
+      <td>{{ row.manager.full_name }} ({{ row.manager.login }})</td>
+      <td>{{ row.stats.total }}</td>
+      <td>{{ row.stats.bot_started }}</td>
+      <td>{{ row.stats.confirmed }}</td>
+      <td>{{ row.stats.arrived }}</td>
+      <td>{{ row.stats.bought }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

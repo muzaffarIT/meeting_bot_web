@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Сотрудники</h1>
+    <p class="muted">Управление менеджерами, администраторами и владельцем системы.</p>
+  </div>
+
+  {% if user.role in ['owner', 'admin'] %}
+    <div class="actions">
+      <a href="/users/new" class="btn">+ Добавить сотрудника</a>
+    </div>
+  {% endif %}
+</div>
+
+<div class="stats-grid">
+  <div class="stat">
+    <div class="stat-num">{{ users|length }}</div>
+    <div>Всего сотрудников</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ users | selectattr('role', 'equalto', 'manager') | list | length }}</div>
+    <div>Менеджеры</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ users | selectattr('role', 'equalto', 'admin') | list | length }}</div>
+    <div>Администраторы</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ users | selectattr('role', 'equalto', 'owner') | list | length }}</div>
+    <div>Владельцы</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ users | selectattr('active', 'equalto', 'ДА') | list | length }}</div>
+    <div>Активные</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="page-header" style="margin-bottom: 18px;">
+    <div>
+      <h2>Список сотрудников</h2>
+      <p class="muted">Доступы к CRM и контактные данные команды.</p>
+    </div>
+  </div>
+
+  <form method="get" class="filters" style="margin-bottom: 24px;">
+    <input type="search" name="q" value="{{ current_q }}" placeholder="Поиск (Уникальный логин, ФИО, телефон)...">
+    <button type="submit">Найти</button>
+  </form>
+
+  {% if users %}
+    <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Логин</th>
+          <th>ФИО</th>
+          <th>Роль</th>
+          <th>Телефон</th>
+          <th>Telegram</th>
+          <th>Статус</th>
+          <th>Создан</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in users %}
+
+          {# ✅ кто может управлять этим пользователем:
+             owner — всех
+             admin — только manager и себя
+          #}
+          {% set can_manage =
+              (user.role == 'owner')
+              or (user.role == 'admin' and (item.role == 'manager' or item.login == user.login))
+          %}
+
+          <tr>
+            <td>
+              {% if can_manage %}
+                <a href="/users/{{ item.login }}/edit"><strong>{{ item.login }}</strong></a>
+              {% else %}
+                <strong>{{ item.login }}</strong>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if can_manage %}
+                <a href="/users/{{ item.login }}/edit">{{ item.full_name }}</a>
+              {% else %}
+                {{ item.full_name }}
+              {% endif %}
+            </td>
+
+            <td>
+              {% if item.role == 'owner' %}
+                <span class="badge badge-danger">Владелец</span>
+              {% elif item.role == 'admin' %}
+                <span class="badge badge-primary">Администратор</span>
+              {% elif item.role == 'manager' %}
+                <span class="badge badge-success">Менеджер</span>
+              {% else %}
+                <span class="badge badge-neutral">{{ item.role }}</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if item.phone %}
+                <a href="tel:{{ item.phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}">{{ item.phone }}</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td>
+              {% if item.telegram %}
+                <a href="https://t.me/{{ item.telegram.lstrip('@') }}" target="_blank">@{{ item.telegram.lstrip('@') }}</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+            <td>
+              {% if item.active == 'ДА' %}
+                <span class="badge badge-success">Активен</span>
+              {% else %}
+                <span class="badge badge-neutral">Отключен</span>
+              {% endif %}
+            </td>
+
+            <td>{{ item.created_at or '—' }}</td>
+
+            <td>
+              {% if user.role in ['owner', 'admin'] %}
+
+                {# ✅ не удаляем твою логику, но добавляем проверку can_manage #}
+                {% if can_manage %}
+                  <a class="btn btn-sm btn-ghost" href="/users/{{ item.login }}/edit">Редактировать</a>
+                  <a class="btn btn-sm" href="/users/{{ item.login }}/reset-password">Сбросить пароль</a>
+                {% else %}
+                  —
+                {% endif %}
+
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="muted">Сотрудники пока не добавлены.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

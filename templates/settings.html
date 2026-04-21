@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Настройки</h1>
+    <p class="muted">Системные настройки филиала и напоминаний. Доступно только владельцу.</p>
+  </div>
+</div>
+
+<div class="card">
+  {% if saved %}
+    <div class="alert">✅ Сохранено</div>
+  {% endif %}
+
+  <form method="post" action="/settings" class="form-grid two-cols">
+
+    <div class="full section-title">Филиал</div>
+
+    <label class="full">
+      Название филиала
+      <input type="text" name="branch_name" value="{{ s.branch_name }}">
+    </label>
+
+    <label class="full">
+      Адрес (текст)
+      <input type="text" name="branch_address" value="{{ s.branch_address }}">
+    </label>
+
+    <label>
+      Google Maps URL
+      <input type="text" name="location_google_url" value="{{ s.location_google_url }}">
+    </label>
+
+    <label>
+      Yandex Maps URL
+      <input type="text" name="location_yandex_url" value="{{ s.location_yandex_url }}">
+    </label>
+
+    <div class="full section-title">Напоминания</div>
+
+    <label>
+      3 дня — включено
+      <select name="remind_3d_enabled">
+        <option value="ДА" {% if s.remind_3d_enabled == 'ДА' %}selected{% endif %}>ДА</option>
+        <option value="НЕТ" {% if s.remind_3d_enabled != 'ДА' %}selected{% endif %}>НЕТ</option>
+      </select>
+    </label>
+    <label>
+      3 дня — часов до встречи
+      <input type="number" name="remind_3d_hours" value="{{ s.remind_3d_hours }}">
+    </label>
+
+    <label>
+      1 день — включено
+      <select name="remind_1d_enabled">
+        <option value="ДА" {% if s.remind_1d_enabled == 'ДА' %}selected{% endif %}>ДА</option>
+        <option value="НЕТ" {% if s.remind_1d_enabled != 'ДА' %}selected{% endif %}>НЕТ</option>
+      </select>
+    </label>
+    <label>
+      1 день — часов до встречи
+      <input type="number" name="remind_1d_hours" value="{{ s.remind_1d_hours }}">
+    </label>
+
+    <label>
+      6 часов — включено
+      <select name="remind_6h_enabled">
+        <option value="ДА" {% if s.remind_6h_enabled == 'ДА' %}selected{% endif %}>ДА</option>
+        <option value="НЕТ" {% if s.remind_6h_enabled != 'ДА' %}selected{% endif %}>НЕТ</option>
+      </select>
+    </label>
+    <label>
+      6 часов — часов до встречи
+      <input type="number" name="remind_6h_hours" value="{{ s.remind_6h_hours }}">
+    </label>
+
+    <label>
+      3 часа — включено
+      <select name="remind_3h_enabled">
+        <option value="ДА" {% if s.remind_3h_enabled == 'ДА' %}selected{% endif %}>ДА</option>
+        <option value="НЕТ" {% if s.remind_3h_enabled != 'ДА' %}selected{% endif %}>НЕТ</option>
+      </select>
+    </label>
+    <label>
+      3 часа — часов до встречи
+      <input type="number" name="remind_3h_hours" value="{{ s.remind_3h_hours }}">
+    </label>
+
+    <label>
+      2 часа — включено
+      <select name="remind_2h_enabled">
+        <option value="ДА" {% if s.remind_2h_enabled == 'ДА' %}selected{% endif %}>ДА</option>
+        <option value="НЕТ" {% if s.remind_2h_enabled != 'ДА' %}selected{% endif %}>НЕТ</option>
+      </select>
+    </label>
+    <label>
+      2 часа — часов до встречи
+      <input type="number" name="remind_2h_hours" value="{{ s.remind_2h_hours }}">
+    </label>
+
+    <div class="full section-title">Worker</div>
+    <label class="full">
+      Интервал проверки напоминаний (сек)
+      <input type="number" name="poll_interval_seconds" value="{{ s.poll_interval_seconds }}">
+    </label>
+
+    <button class="full" type="submit">Сохранить настройки</button>
+  </form>
+</div>
+
+{% endblock %}

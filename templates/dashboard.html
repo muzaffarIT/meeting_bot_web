@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Главная</h1>
+    <p class="muted">
+      Добро пожаловать, {{ user.full_name }} ({{ user.role }}). Здесь показана сводка по клиентам и ближайшим встречам.
+    </p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat">
+    <div class="stat-num">{{ stats.total }}</div>
+    <div>Всего клиентов</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ stats.bot_started }}</div>
+    <div>Зашли в бота</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ stats.confirmed }}</div>
+    <div>Подтвердили</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ stats.arrived }}</div>
+    <div>Пришли</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-num">{{ stats.bought }}</div>
+    <div>Купили</div>
+  </div>
+</div>
+
+<div class="form-grid two-cols" style="margin-bottom: 22px;">
+  <div class="card" style="padding: 20px;">
+    <h3 style="margin-bottom: 15px; color: var(--text-2); font-size: 14px;">Воронка Конверсии</h3>
+    <div style="height: 220px; width: 100%;">
+      <canvas id="funnelChart"></canvas>
+    </div>
+  </div>
+  <div class="card" style="padding: 20px;">
+    <h3 style="margin-bottom: 15px; color: var(--text-2); font-size: 14px;">Назначенные встречи (последние 7 дат)</h3>
+    <div style="height: 220px; width: 100%;">
+      <canvas id="datesChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const funnelCtx = document.getElementById('funnelChart').getContext('2d');
+    const datesCtx = document.getElementById('datesChart').getContext('2d');
+
+    const funnelData = [
+        {{ stats.total }},
+        {{ stats.bot_started }},
+        {{ stats.confirmed }},
+        {{ stats.arrived }},
+        {{ stats.bought }}
+    ];
+
+    Chart.defaults.color = '#8888bb';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+
+    new Chart(funnelCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Всего', 'Бот', 'Подтвердили', 'Пришли', 'Купили'],
+            datasets: [{
+                label: 'Клиентов',
+                data: funnelData,
+                backgroundColor: [
+                    'rgba(108,92,231,0.8)',
+                    'rgba(0,206,201,0.8)',
+                    'rgba(253,203,110,0.8)',
+                    'rgba(0,184,148,0.8)',
+                    'rgba(253,121,168,0.8)'
+                ],
+                borderWidth: 0,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(136,136,187,0.1)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    const datesObj = {{ stats.dates_chart | tojson | safe }};
+    const dateLabels = Object.keys(datesObj);
+    const dateValues = Object.values(datesObj);
+
+    new Chart(datesCtx, {
+        type: 'line',
+        data: {
+            labels: dateLabels,
+            datasets: [{
+                label: 'Встречи',
+                data: dateValues,
+                borderColor: '#6c5ce7',
+                backgroundColor: 'rgba(108,92,231,0.15)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(136,136,187,0.1)' }, ticks: { precision: 0 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+
+<div class="card">
+  <div class="page-header" style="margin-bottom: 18px;">
+    <div>
+      <h2>Ближайшие встречи</h2>
+      <p class="muted">Актуальные встречи по клиентам, отсортированные по дате и времени.</p>
+    </div>
+  </div>
+
+  {% if upcoming %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Клиент</th>
+          <th>Менеджер</th>
+          <th>Дата</th>
+          <th>Время</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in upcoming %}
+          <tr>
+            <td>
+              <a href="/leads/{{ lead.lead_id }}">{{ lead.lead_id }}</a>
+            </td>
+            <td>
+              <div>{{ lead.parent_name }}</div>
+              <div class="muted">{{ lead.parent_phone }}</div>
+            </td>
+            <td>
+              <div>{{ lead.manager_name }}</div>
+              <div class="muted">{{ lead.manager_login }}</div>
+            </td>
+            <td>{{ lead.meeting_date }}</td>
+            <td>{{ lead.meeting_time }}</td>
+            <td>
+              {% if lead.status == 'BOUGHT' %}
+                <span class="badge badge-success">Купил</span>
+              {% elif lead.status == 'ARRIVED' %}
+                <span class="badge badge-success">Пришел</span>
+              {% elif lead.status == 'CONFIRMED' %}
+                <span class="badge badge-primary">Подтверждено</span>
+              {% elif lead.status == 'BOT_STARTED' %}
+                <span class="badge badge-warning">Бот запущен</span>
+              {% elif lead.status == 'LINK_SENT' %}
+                <span class="badge badge-neutral">Ссылка отправлена</span>
+              {% elif lead.status == 'NO_SHOW' %}
+                <span class="badge badge-danger">Не пришел</span>
+              {% elif lead.status == 'LOST' %}
+                <span class="badge badge-danger">Потерян</span>
+              {% elif lead.status == 'RESCHEDULED' %}
+                <span class="badge badge-warning">Перенесено</span>
+              {% else %}
+                <span class="badge badge-neutral">{{ lead.status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="muted">Ближайших встреч пока нет.</div>
+  {% endif %}
+</div>
+
+{% endblock %}
