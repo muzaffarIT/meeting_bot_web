@@ -338,8 +338,8 @@ def lead_new_page(request: Request):
     except PermissionError:
         return RedirectResponse('/login', status_code=303)
 
-    # только admin/owner может создавать клиентов
-    if not (is_admin(user) or is_owner(user)):
+    # admin, owner и manager могут создавать клиентов
+    if not (is_admin(user) or is_owner(user) or is_manager(user)):
         return RedirectResponse('/leads', status_code=303)
 
     managers = [
@@ -366,8 +366,8 @@ def lead_create(
     except PermissionError:
         return RedirectResponse('/login', status_code=303)
 
-    # только admin/owner может создавать клиентов
-    if not (is_admin(user) or is_owner(user)):
+    # admin, owner и manager могут создавать клиентов
+    if not (is_admin(user) or is_owner(user) or is_manager(user)):
         return RedirectResponse('/leads', status_code=303)
 
     manager = find_user_by_login(manager_login)
