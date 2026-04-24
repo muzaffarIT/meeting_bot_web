@@ -68,13 +68,13 @@ def require_user(request: Request) -> dict:
 
 
 def is_admin(user: dict) -> bool:
-    return user.get('role') == ROLE_ADMIN
+    return str(user.get('role', '')).strip() == ROLE_ADMIN
 
 def is_owner(user: dict) -> bool:
-    return user.get('role') == ROLE_OWNER
+    return str(user.get('role', '')).strip() == ROLE_OWNER
 
 def is_manager(user: dict) -> bool:
-    return user.get('role') == ROLE_MANAGER
+    return str(user.get('role', '')).strip() == ROLE_MANAGER
 
 def lead_visible_to_user(lead: dict, user: dict) -> bool:
     if is_admin(user) or is_owner(user):

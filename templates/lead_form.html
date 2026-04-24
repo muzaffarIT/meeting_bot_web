@@ -34,7 +34,7 @@
       Ответственный менеджер
       <select name="manager_login" required>
         {% for manager in managers %}
-          <option value="{{ manager.login }}">
+          <option value="{{ manager.login }}" {% if manager.login == user.login %}selected{% endif %}>
             {{ manager.full_name }} ({{ manager.login }})
           </option>
         {% endfor %}
