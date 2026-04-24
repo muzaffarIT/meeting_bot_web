@@ -260,7 +260,7 @@ def leads_list(request: Request, status: str = '', day: str = '', q: str = ''):
                 filtered.append(lead)
         leads = filtered
 
-    leads = sorted(leads, key=lambda x: parse_meeting_datetime(x) or now_local(), reverse=False)
+    leads = sorted(leads, key=lambda x: str(x.get('created_at', '')), reverse=True)
     return templates.TemplateResponse(
     'leads.html',
     {
@@ -300,7 +300,7 @@ def leads_export(request: Request, status: str = '', day: str = '', q: str = '')
                 filtered.append(lead)
         leads = filtered
 
-    leads = sorted(leads, key=lambda x: parse_meeting_datetime(x) or now_local(), reverse=False)
+    leads = sorted(leads, key=lambda x: str(x.get('created_at', '')), reverse=True)
 
     from constants import HEADERS_LEADS, HEADER_MAP_LEADS
     output = io.StringIO()
