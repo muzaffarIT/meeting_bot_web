@@ -3,6 +3,7 @@ from typing import Any
 import time
 
 from db_models import SessionLocal, Lead, User, Setting, Message
+import sheets
 
 def _model_to_dict(obj) -> dict[str, Any]:
     if not obj:
@@ -59,6 +60,13 @@ def update_lead_fields(lead_id: str, updates: dict[str, Any]) -> bool:
         return False
     finally:
         db.close()
+        
+    try:
+        sheets.update_lead_fields(lead_id, updates)
+    except Exception as e:
+        print(f"Google Sheets sync error (update_lead_fields): {e}")
+
+    return True
 
 def update_user_fields(login: str, updates: dict[str, Any]) -> bool:
     from sqlalchemy import func
@@ -78,6 +86,13 @@ def update_user_fields(login: str, updates: dict[str, Any]) -> bool:
         return False
     finally:
         db.close()
+
+    try:
+        sheets.update_user_fields(login, updates)
+    except Exception as e:
+        print(f"Google Sheets sync error (update_user_fields): {e}")
+
+    return True
 
 def ensure_settings_sheet() -> None:
     # Deprecated for DB, but kept for compatibility
@@ -143,6 +158,11 @@ def append_lead_dict(data: dict[str, Any]) -> None:
     finally:
         db.close()
 
+    try:
+        sheets.append_lead_dict(data)
+    except Exception as e:
+        print(f"Google Sheets sync error (append_lead): {e}")
+
 def append_user_dict(data: dict[str, Any]) -> None:
     db = SessionLocal()
     try:
@@ -152,6 +172,13 @@ def append_user_dict(data: dict[str, Any]) -> None:
         db.commit()
     except Exception:
         db.rollback()
+    finally:
+        db.close()
+
+    try:
+        sheets.append_user_dict(data)
+    except Exception as e:
+        print(f"Google Sheets sync error (append_user): {e}")
     finally:
         db.close()
 

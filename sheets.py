@@ -131,6 +131,13 @@ def _rows_to_dicts(values: list[list[str]], header_map: dict[str, str]) -> list[
 
         raw = {headers[i]: row[i] if i < len(row) else "" for i in range(len(headers))}
         normalized = {py_name: raw.get(sheet_name, "") for py_name, sheet_name in header_map.items()}
+        
+        # Пропускаем строки без обязательных ID, чтобы не вызвать ошибку БД (IntegrityError)
+        if header_map == HEADER_MAP_LEADS and not str(normalized.get('lead_id', '')).strip():
+            continue
+        if header_map == HEADER_MAP_USERS and not str(normalized.get('login', '')).strip():
+            continue
+            
         records.append(normalized)
 
     return records

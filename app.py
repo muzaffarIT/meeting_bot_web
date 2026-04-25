@@ -232,6 +232,16 @@ def dashboard(request: Request):
     return templates.TemplateResponse('dashboard.html', {'request': request, 'user': user, 'stats': stats, 'upcoming': upcoming})
 
 
+@app.get('/debug-db')
+def debug_db():
+    from db_models import SessionLocal, Lead
+    db = SessionLocal()
+    try:
+        leads = db.query(Lead).all()
+        return {"total_leads": len(leads), "leads_sample": [{"id": l.lead_id, "manager": l.manager_login, "status": l.status} for l in leads[:5]]}
+    finally:
+        db.close()
+
 @app.get('/leads', response_class=HTMLResponse)
 def leads_list(request: Request, status: str = '', day: str = '', q: str = ''):
     try:
