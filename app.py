@@ -68,13 +68,13 @@ def require_user(request: Request) -> dict:
 
 
 def is_admin(user: dict) -> bool:
-    return str(user.get('role', '')).strip() == ROLE_ADMIN
+    return str(user.get('role', '')).strip().lower() == ROLE_ADMIN
 
 def is_owner(user: dict) -> bool:
-    return str(user.get('role', '')).strip() == ROLE_OWNER
+    return str(user.get('role', '')).strip().lower() == ROLE_OWNER
 
 def is_manager(user: dict) -> bool:
-    return str(user.get('role', '')).strip() == ROLE_MANAGER
+    return str(user.get('role', '')).strip().lower() == ROLE_MANAGER
 
 def lead_visible_to_user(lead: dict, user: dict) -> bool:
     if is_admin(user) or is_owner(user):
@@ -260,7 +260,7 @@ def leads_list(request: Request, status: str = '', day: str = '', q: str = ''):
                 filtered.append(lead)
         leads = filtered
 
-    leads = sorted(leads, key=lambda x: str(x.get('created_at', '')), reverse=True)
+    leads = sorted(leads, key=lambda x: str(x.get('created_at', '')).strip() or str(x.get('meeting_datetime_iso', '')).strip(), reverse=True)
     return templates.TemplateResponse(
     'leads.html',
     {
