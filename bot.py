@@ -130,15 +130,9 @@ def reminder_keyboard(lead: dict, confirmed: bool, lang: str) -> InlineKeyboardM
         ])
 
     if confirmed:
-        if google_url:
-            rows.append([
-                InlineKeyboardButton(labels.get('google_maps', '📍 Google Maps'), url=google_url)
-            ])
-
-        if yandex_url:
-            rows.append([
-                InlineKeyboardButton(labels.get('yandex_maps', '📍 Яндекс Карты'), url=yandex_url)
-            ])
+        rows.append([
+            InlineKeyboardButton(labels.get('get_location', '📍 Получить локацию'), callback_data=f"location:{lead_id}")
+        ])
 
     rows.append([
         InlineKeyboardButton(
@@ -215,6 +209,22 @@ async def handle_contact_back(update: Update, context: ContextTypes.DEFAULT_TYPE
             preconfirm_text(lang),
             reply_markup=preconfirm_keyboard(lead, lang),
         )
+
+async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query is None:
+        return
+
+    await safe_answer_callback(query)
+
+    try:
+        await context.bot.send_location(
+            chat_id=query.message.chat_id,
+            latitude=41.293504,
+            longitude=69.245394
+        )
+    except Exception as e:
+        logger.error(f"Failed to send location: {e}")
 
 async def handle_show_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -410,6 +420,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(handle_contact_menu, pattern=r"^contact:"))
     app.add_handler(CallbackQueryHandler(handle_contact_back, pattern=r"^contact_back:"))
     app.add_handler(CallbackQueryHandler(handle_show_phone, pattern=r"^show_phone:"))
+    app.add_handler(CallbackQueryHandler(handle_location, pattern=r"^location:"))
     # Handle any plain text from client (for two-way chat)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_incoming_text))
 

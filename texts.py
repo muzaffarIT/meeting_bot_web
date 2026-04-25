@@ -29,56 +29,55 @@ def confirmed_details_text(lead: dict, lang: str) -> str:
     date_ = lead.get('meeting_date', '')
     time_ = lead.get('meeting_time', '')
     address = lead.get('address_text', '')
-    branch = lead.get('branch_name', 'Newton Academy')
 
     if lang == 'uz':
         return (
-            'Rahmat, uchrashuv tasdiqlandi.\n\n'
-            f'🏫 Filial: {branch}\n'
+            '✅ Rahmat, uchrashuv tasdiqlandi.\n\n'
+            f'📍 Manzil: {address}\n'
             f'📅 Sana: {date_}\n'
-            f'🕒 Vaqt: {time_}\n'
-            f'📍 Manzil: {address}\n\n'
-            'Lokatsiyani quyidagi tugmalar orqali ochishingiz mumkin.'
+            f'🕒 Vaqt: {time_}\n\n'
+            '—————————————\n'
+            '📍 Lokatsiyani olish uchun quyidagi tugmani bosing.'
         )
 
     return (
-        'Спасибо, встреча подтверждена.\n\n'
-        f'🏫 Филиал: {branch}\n'
+        '✅ Спасибо, встреча подтверждена.\n\n'
+        f'📍 Адрес: {address}\n'
         f'📅 Дата: {date_}\n'
-        f'🕒 Время: {time_}\n'
-        f'📍 Адрес: {address}\n\n'
-        'Локацию можно открыть кнопками ниже.'
+        f'🕒 Время: {time_}\n\n'
+        '—————————————\n'
+        '📍 Чтобы получить локацию, нажмите кнопку ниже.'
     )
 
 
 def reminder_text(lead: dict, lang: str, label: str, confirmed: bool) -> str:
     date_ = lead.get('meeting_date', '')
     time_ = lead.get('meeting_time', '')
-    branch = lead.get('branch_name', 'Newton Academy')
+    address = lead.get('address_text', '')
 
     if lang == 'uz':
         tail = (
-            'Tasdiqlaganingiz uchun rahmat. Lokatsiya pastdagi tugmalarda mavjud.'
+            '—————————————\n📍 Lokatsiyani olish uchun quyidagi tugmani bosing.'
             if confirmed
             else 'Iltimos, uchrashuvni tasdiqlang.'
         )
         return (
             f"⏰ Eslatma: uchrashuvgacha {label} qoldi.\n\n"
-            f'🏫 Filial: {branch}\n'
+            f'📍 Manzil: {address}\n'
             f'📅 Sana: {date_}\n'
             f'🕒 Vaqt: {time_}\n\n'
             f'{tail}'
         )
 
     tail = (
-        'Спасибо за подтверждение. Локацию можно открыть кнопками ниже.'
+        '—————————————\n📍 Чтобы получить локацию, нажмите кнопку ниже.'
         if confirmed
         else 'Пожалуйста, подтвердите встречу.'
     )
 
     return (
         f'⏰ Напоминание: до вашей встречи осталось {label}.\n\n'
-        f'🏫 Филиал: {branch}\n'
+        f'📍 Адрес: {address}\n'
         f'📅 Дата: {date_}\n'
         f'🕒 Время: {time_}\n\n'
         f'{tail}'
@@ -90,14 +89,12 @@ def button_labels(lang: str) -> dict:
             "confirm": "✅ Uchrashuvni tasdiqlayman",
             "contact_tg": "💬 Menejer bilan bog‘lanish",
             "contact_phone": "📞 Menejer bilan bog‘lanish",
-            "google_maps": "📍 Google Maps",
-            "yandex_maps": "📍 Yandex Maps",
+            "get_location": "📍 Lokatsiyani olish",
         }
 
     return {
         "confirm": "✅ Подтверждаю встречу",
         "contact_tg": "💬 Связаться с менеджером",
         "contact_phone": "📞 Связаться с менеджером",
-        "google_maps": "📍 Google Maps",
-        "yandex_maps": "📍 Яндекс Карты",
+        "get_location": "📍 Получить локацию",
     }
