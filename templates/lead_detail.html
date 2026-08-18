@@ -1,20 +1,50 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="page-header">
-  <div>
-    <h1>Клиент {{ lead.lead_id }}</h1>
-    <p class="muted">
-      Карточка клиента, встреча, результат и ссылка для перехода в Telegram-бота.
-    </p>
+<div class="page-header" style="align-items:center;">
+  <div style="display:flex; align-items:center; gap:16px; min-width:0;">
+    <span class="avatar av-lg">{{ (lead.parent_name or '?')[0]|upper }}</span>
+    <div style="min-width:0;">
+      <h1 style="margin-bottom:3px;">{{ lead.parent_name or 'Без имени' }}</h1>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        {% if lead.parent_phone %}
+          <a href="tel:{{ lead.parent_phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}" class="muted" style="font-size:13px;">📞 {{ lead.parent_phone }}</a>
+        {% endif %}
+        {% if lead.status == 'BOUGHT' %}
+          <span class="badge badge-success">Купил</span>
+        {% elif lead.status == 'ARRIVED' %}
+          <span class="badge badge-success">Пришел</span>
+        {% elif lead.status == 'CONFIRMED' %}
+          <span class="badge badge-primary">Подтверждено</span>
+        {% elif lead.status == 'BOT_STARTED' %}
+          <span class="badge badge-warning">Бот запущен</span>
+        {% elif lead.status == 'NO_SHOW' %}
+          <span class="badge badge-danger">Не пришел</span>
+        {% elif lead.status == 'LOST' %}
+          <span class="badge badge-danger">Потерян</span>
+        {% elif lead.status == 'RESCHEDULED' %}
+          <span class="badge badge-warning">Перенесено</span>
+        {% else %}
+          <span class="badge badge-neutral">{{ status_labels.get(lead.status, lead.status) }}</span>
+        {% endif %}
+        <span class="mono-chip">#{{ lead.lead_id }}</span>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="card" style="margin-bottom: 20px; border: 1px solid rgba(0,162,255,0.35); background:
   linear-gradient(var(--surface), var(--surface)) padding-box,
   linear-gradient(120deg, rgba(0,162,255,0.65), rgba(106,17,203,0.65)) border-box;">
-  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom: 6px;">
-    <span class="section-title" style="margin: 0; flex: 1;">Приглашение для клиента</span>
+  <div class="card-head" style="margin-bottom:14px;">
+    <span class="card-head__icon" style="background: rgba(0,162,255,0.10); border-color: rgba(0,162,255,0.35);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4dc3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Приглашение для клиента</div>
+      <div class="card-head__sub">Ссылка, которую вы отправляете родителю</div>
+    </div>
+    <div class="card-head__spacer"></div>
     {% if invite_is_landing %}
       <span class="badge badge-success">✨ Красивый лендинг</span>
     {% else %}
@@ -106,7 +136,15 @@ function toggleQr() {
 </script>
 
 <div class="card" style="margin-bottom: 20px;">
-  <div class="section-title">Основная информация</div>
+  <div class="card-head">
+    <span class="card-head__icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Основная информация</div>
+      <div class="card-head__sub">Контакт, менеджер и статусы бота</div>
+    </div>
+  </div>
 
   <div class="kv">
     <div class="kv-row">
@@ -151,10 +189,15 @@ function toggleQr() {
 </div>
 
 <div class="card" style="margin-bottom: 20px;">
-  <div class="section-title">Перенос встречи</div>
-  <p class="muted">
-    Если изменить дату или время встречи, напоминания будут сброшены и пересчитаются заново.
-  </p>
+  <div class="card-head">
+    <span class="card-head__icon" style="background: rgba(253,203,110,0.10); border-color: rgba(253,203,110,0.3);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fdcb6e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Перенос встречи</div>
+      <div class="card-head__sub">При изменении даты напоминания пересчитаются заново</div>
+    </div>
+  </div>
 
   <form method="post" action="/leads/{{ lead.lead_id }}/meeting" class="form-grid two-cols">
     <label>
@@ -182,11 +225,17 @@ function toggleQr() {
   </form>
 </div>
 
+{% if user.role in ['admin', 'owner'] %}
 <div class="card">
-  <div class="section-title">Результат встречи</div>
-  <p class="muted">
-    Если поставить «Купил = ДА», клиент автоматически будет считаться пришедшим.
-  </p>
+  <div class="card-head">
+    <span class="card-head__icon" style="background: rgba(0,184,148,0.10); border-color: rgba(0,184,148,0.3);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#00d4a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Результат встречи</div>
+      <div class="card-head__sub">Доступно только администраторам · «Купил» автоматически = «Пришел»</div>
+    </div>
+  </div>
 
   <form method="post" action="/leads/{{ lead.lead_id }}/result" class="form-grid two-cols">
     <label>
@@ -213,25 +262,48 @@ function toggleQr() {
     <button type="submit" class="full">Сохранить результат</button>
   </form>
 </div>
+{% else %}
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-head">
+    <span class="card-head__icon" style="background: rgba(0,184,148,0.10); border-color: rgba(0,184,148,0.3);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#00d4a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Результат встречи</div>
+      <div class="card-head__sub">Заполняет администратор</div>
+    </div>
+  </div>
+  <div style="display:flex; gap:22px; flex-wrap:wrap;">
+    <div>
+      <div class="kv-key" style="margin-bottom:5px;">Пришел</div>
+      {% if lead.arrived == 'ДА' %}<span class="pill pill-yes">да</span>{% else %}<span class="pill pill-no">нет</span>{% endif %}
+    </div>
+    <div>
+      <div class="kv-key" style="margin-bottom:5px;">Купил</div>
+      {% if lead.bought == 'ДА' %}<span class="pill pill-yes">да</span>{% else %}<span class="pill pill-no">нет</span>{% endif %}
+    </div>
+    {% if lead.notes %}
+    <div style="flex:1; min-width:200px;">
+      <div class="kv-key" style="margin-bottom:5px;">Заметки</div>
+      <div style="font-size:13px; color:var(--text-2); line-height:1.55;">{{ lead.notes }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
 <div class="card" style="margin-bottom: 20px; border-left: 3px solid #6c5ce7;">
   <!-- Header row -->
-  <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c5ce7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-      <span class="section-title" style="margin: 0;">Переписка с клиентом</span>
+  <div class="card-head" style="margin-bottom:14px;">
+    <span class="card-head__icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Переписка с клиентом</div>
+      <div class="card-head__sub">{% if chat_messages %}{{ chat_messages|length }} сообщений{% else %}Сообщений пока нет{% endif %}</div>
     </div>
-    {% if chat_messages %}
-      <span style="font-size:12px; color: var(--text-3);">{{ chat_messages|length }} сообщений</span>
-    {% else %}
-      <span style="font-size:12px; color: var(--text-3);">Сообщений пока нет</span>
-    {% endif %}
-    <div style="margin-left: auto;">
-      <a href="/inbox" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid #6c5ce7; color: #6c5ce7; font-size: 12px; font-weight: 600; text-decoration: none; transition: 0.2s;" onmouseover="this.style.background='rgba(108,92,231,0.1)'" onmouseout="this.style.background='transparent'">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        История
-      </a>
-    </div>
+    <div class="card-head__spacer"></div>
+    <a href="/inbox" class="btn btn-ghost btn-sm" style="text-decoration:none;">История →</a>
   </div>
 
   {% if msg_success is defined and msg_success %}
@@ -283,19 +355,20 @@ function toggleQr() {
   {% endif %}
 </div>
 
-<div class="card" style="margin-bottom: 20px; border-left: 3px solid #00cec9;">
-  <div class="section-title" style="display:flex; align-items:center; gap:8px;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00cec9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    Повторная запись
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-head" style="margin-bottom:14px;">
+    <span class="card-head__icon" style="background: rgba(0,206,201,0.10); border-color: rgba(0,206,201,0.35);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#00cec9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Повторная запись</div>
+      <div class="card-head__sub">Новый лид на основе этого клиента — данные скопируются, встреча сбросится</div>
+    </div>
+    <div class="card-head__spacer"></div>
+    <form method="post" action="/leads/{{ lead.lead_id }}/clone" style="margin:0;">
+      <button type="submit" class="btn btn-sm" style="background: linear-gradient(135deg, #00b894, #00cec9);">🔄 Создать повтор</button>
+    </form>
   </div>
-  <p class="muted" style="font-size: 13px; margin-bottom: 15px;">
-    Создать нового лида на основе этого клиента. Данные клиента и менеджера скопируются, а встреча, статус и бот-данные будут сброшены. После создания вы сможете назначить новую дату.
-  </p>
-  <form method="post" action="/leads/{{ lead.lead_id }}/clone">
-    <button type="submit" style="background: linear-gradient(135deg, #00b894, #00cec9); min-width: 200px;">
-      🔄 Создать повтор
-    </button>
-  </form>
 </div>
 
 {% endblock %}

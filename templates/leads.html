@@ -1,63 +1,91 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Лиды</h1>
+
+<div class="page-header">
+  <div>
+    <h1>Клиенты</h1>
+    <p class="muted">
+      {% if leads|length %}Всего в выборке: <b style="color:var(--text)">{{ leads|length }}</b>{% else %}Клиенты не найдены{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    <a href="/leads/new" class="btn" style="text-decoration:none;">＋ Новый клиент</a>
+  </div>
+</div>
+
 <form method="get" class="filters">
   <input type="search" name="q" value="{{ current_q }}" placeholder="Поиск (Имя, тел., менеджер)...">
   <select name="status">
     <option value="">Все статусы</option>
     {% for item in status_choices %}
-      <option value="{{ item }}" {% if item == current_status %}selected{% endif %}>
-  {{ status_labels.get(item, item) }}
-</option>
+      <option value="{{ item }}" {% if item == current_status %}selected{% endif %}>{{ status_labels.get(item, item) }}</option>
     {% endfor %}
   </select>
   <input type="date" name="day" value="{{ current_day }}">
   <button type="submit">Фильтровать</button>
-  <a href="/leads/export?status={{ current_status }}&day={{ current_day }}&q={{ current_q }}" class="btn" style="background: linear-gradient(135deg, #00b894, #00cec9);">Экспорт CSV</a>
+  {% if current_q or current_status or current_day %}<a href="/leads" class="btn btn-ghost" style="text-decoration:none;">Сбросить</a>{% endif %}
+  <a href="/leads/export?status={{ current_status }}&day={{ current_day }}&q={{ current_q }}" class="btn" style="background: linear-gradient(135deg,#0bab63,#00c98a); text-decoration:none;">📥 Экспорт CSV</a>
 </form>
+
 <div class="card table-responsive">
   <table>
-    <tr>
-      <th style="width: 30px;"><input type="checkbox" id="selectAll"></th>
-      <th>ID</th><th>Родитель</th><th>Менеджер</th><th>Дата</th><th>Время</th><th>Статус</th><th>Бот</th><th>Подтв.</th>
-    </tr>
+    <thead>
+      <tr>
+        <th style="width: 34px;"><input type="checkbox" id="selectAll" title="Выбрать всех"></th>
+        <th>Клиент</th><th>Менеджер</th><th>Встреча</th><th>Статус</th><th style="text-align:center;">Бот</th><th style="text-align:center;">Подтв.</th>
+      </tr>
+    </thead>
+    <tbody>
     {% for lead in leads %}
     <tr>
       <td><input type="checkbox" class="lead-cb" value="{{ lead.lead_id }}"></td>
-      <td><a href="/leads/{{ lead.lead_id }}">{{ lead.lead_id }}</a></td>
       <td>
-        <div>{{ lead.parent_name }}</div>
-        <div class="muted">
-          {% if lead.parent_phone %}
-            <a href="tel:{{ lead.parent_phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}">{{ lead.parent_phone }}</a>
-          {% else %}
-            —
-          {% endif %}
+        <div class="cell-person">
+          <span class="avatar">{{ (lead.parent_name or '?')[0]|upper }}</span>
+          <div class="cell-person__info">
+            <div class="cell-person__name"><a href="/leads/{{ lead.lead_id }}" style="color:inherit;">{{ lead.parent_name or 'Без имени' }}</a></div>
+            <div class="cell-person__sub">
+              {% if lead.parent_phone %}
+                <a href="tel:{{ lead.parent_phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}">📞 {{ lead.parent_phone }}</a>
+              {% else %}—{% endif %}
+            </div>
+          </div>
         </div>
       </td>
       <td>
-        <div>{{ lead.manager_name }}</div>
-        <div class="muted">{{ lead.manager_login }}</div>
+        <div class="cell-person">
+          <span class="avatar av-mgr">{{ (lead.manager_name or lead.manager_login or '?')[0]|upper }}</span>
+          <div class="cell-person__info">
+            <div class="cell-person__name" style="font-weight:500; font-size:12.5px;">{{ lead.manager_name or '—' }}</div>
+            <div class="cell-person__sub">{{ lead.manager_login }}</div>
+          </div>
+        </div>
       </td>
-      <td>{{ lead.meeting_date }}</td>
-      <td>{{ lead.meeting_time }}</td>
       <td>
-        <select class="ajax-status" data-id="{{ lead.lead_id }}" style="padding: 2px 5px; font-size: 11.5px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); outline: none;">
+        {% if lead.meeting_date %}
+          <span class="dt-chip js-date" data-date="{{ lead.meeting_date }}">{{ lead.meeting_date }}<small>{{ lead.meeting_time }}</small></span>
+        {% else %}
+          <span class="muted" style="font-size:12px;">не назначена</span>
+        {% endif %}
+      </td>
+      <td>
+        <select class="ajax-status" data-id="{{ lead.lead_id }}">
           {% for st in status_choices %}
             <option value="{{ st }}" {% if st == lead.status %}selected{% endif %}>{{ status_labels.get(st, st) }}</option>
           {% endfor %}
         </select>
       </td>
-      <td>{{ lead.bot_started }}</td>
-      <td>{{ lead.confirmed }}</td>
+      <td style="text-align:center;">{% if lead.bot_started == 'ДА' %}<span class="pill pill-yes">да</span>{% else %}<span class="pill pill-no">нет</span>{% endif %}</td>
+      <td style="text-align:center;">{% if lead.confirmed == 'ДА' %}<span class="pill pill-yes">да</span>{% else %}<span class="pill pill-no">нет</span>{% endif %}</td>
     </tr>
     {% endfor %}
+    </tbody>
   </table>
 </div>
 
-<div id="bulk-panel" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border-accent); padding: 15px 25px; border-radius: 50px; box-shadow: var(--sh-lg); z-index: 1000; align-items: center; gap: 15px;">
-  <span id="bulk-count" style="font-weight: 600;">Выбрано: 0</span>
-  <select id="bulk-status" style="min-height: 34px; padding: 0 10px; border-radius: 20px;">
+<div id="bulk-panel" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border-accent); padding: 13px 22px; border-radius: 50px; box-shadow: var(--sh-lg); z-index: 1000; align-items: center; gap: 14px;">
+  <span id="bulk-count" style="font-weight: 700; font-size: 13px;">Выбрано: 0</span>
+  <select id="bulk-status" style="min-height: 36px; padding: 0 10px; border-radius: 20px; font-size: 12.5px;">
     <option value="">Сменить статус на...</option>
     {% for st in status_choices %}
       <option value="{{ st }}">{{ status_labels.get(st, st) }}</option>
@@ -68,12 +96,29 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // AJAX Смена статуса
+  // ── Красивые даты «18 авг, пн» ──
+  const MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  const WDAYS = ['вс','пн','вт','ср','чт','пт','сб'];
+  document.querySelectorAll('.js-date').forEach(el => {
+    const m = (el.dataset.date || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    if (isNaN(d)) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.round((d - today) / 86400000);
+    let label = `${d.getDate()} ${MONTHS[d.getMonth()]}, ${WDAYS[d.getDay()]}`;
+    if (diff === 0) label = 'сегодня';
+    else if (diff === 1) label = 'завтра';
+    else if (diff === -1) label = 'вчера';
+    el.childNodes[0].textContent = label;
+    if (diff >= 0 && diff <= 1) el.style.color = 'var(--warning-text)';
+  });
+
+  // ── AJAX Смена статуса ──
   document.querySelectorAll('.ajax-status').forEach(select => {
     select.addEventListener('change', async (e) => {
       const el = e.target;
       const originalValue = el.getAttribute('data-initial') || Array.from(el.options).find(o => o.defaultSelected)?.value;
-      
       const res = await fetch(`/api/leads/${el.dataset.id}/status`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
@@ -85,36 +130,34 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         el.setAttribute('data-initial', el.value);
         el.style.borderColor = 'var(--success-text)';
-        setTimeout(() => el.style.borderColor = 'var(--border)', 1000);
+        setTimeout(() => el.style.borderColor = '', 1000);
       }
     });
   });
 
-  // Table Sorting logic (click on th)
+  // ── Сортировка по клику на заголовок ──
   const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
-  const comparer = (idx, asc) => (a, b) => ((v1, v2) => 
+  const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
     v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
-    )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
-
+  )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
   document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
-    // skip sorting for checkbox col
-    if(th.cellIndex === 0) return;
+    if (th.cellIndex === 0) return;
     const table = th.closest('table');
     const tbody = table.querySelector('tbody') || table;
-    Array.from(tbody.querySelectorAll('tr:nth-child(n+2)'))
+    Array.from(tbody.querySelectorAll('tr'))
       .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
       .forEach(tr => tbody.appendChild(tr));
   })));
 
-  // Bulk actions logic
+  // ── Массовые действия ──
   const selectAll = document.getElementById('selectAll');
   const checkboxes = document.querySelectorAll('.lead-cb');
   const panel = document.getElementById('bulk-panel');
   const cntText = document.getElementById('bulk-count');
-  
+
   const updatePanel = () => {
     const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
-    if(selected.length > 0) {
+    if (selected.length > 0) {
       cntText.textContent = `Выбрано: ${selected.length}`;
       panel.style.display = 'flex';
     } else {
@@ -123,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  if(selectAll) {
+  if (selectAll) {
     selectAll.addEventListener('change', (e) => {
       checkboxes.forEach(c => c.checked = e.target.checked);
       updatePanel();
@@ -133,23 +176,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('bulk-apply')?.addEventListener('click', async () => {
     const status = document.getElementById('bulk-status').value;
-    if(!status) return alert('Выберите статус!');
+    if (!status) return alert('Выберите статус!');
     const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
-    
     document.getElementById('bulk-apply').textContent = '...';
     const res = await fetch('/api/leads/bulk-status', {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({lead_ids: selected, status})
     });
-    if(res.ok) {
+    if (res.ok) {
       window.location.reload();
     } else {
       alert('Ошибка при массовом обновлении');
       document.getElementById('bulk-apply').textContent = 'Применить';
     }
   });
-
 });
 </script>
 

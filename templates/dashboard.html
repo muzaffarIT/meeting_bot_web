@@ -5,7 +5,9 @@
   <div>
     <h1>Главная</h1>
     <p class="muted">
-      Добро пожаловать, {{ user.full_name }} ({{ user.role }}). Здесь показана сводка по клиентам и ближайшим встречам.
+      Добро пожаловать, <b style="color:var(--text)">{{ user.full_name }}</b> ·
+      {% if user.role == 'owner' %}Владелец{% elif user.role == 'admin' %}Администратор{% else %}Менеджер{% endif %}.
+      Сводка по клиентам и ближайшим встречам.
     </p>
   </div>
 </div>
@@ -141,11 +143,9 @@ document.addEventListener('DOMContentLoaded', function() {
     <table>
       <thead>
         <tr>
-          <th>ID</th>
           <th>Клиент</th>
           <th>Менеджер</th>
-          <th>Дата</th>
-          <th>Время</th>
+          <th>Встреча</th>
           <th>Статус</th>
         </tr>
       </thead>
@@ -153,18 +153,25 @@ document.addEventListener('DOMContentLoaded', function() {
         {% for lead in upcoming %}
           <tr>
             <td>
-              <a href="/leads/{{ lead.lead_id }}">{{ lead.lead_id }}</a>
+              <div class="cell-person">
+                <span class="avatar">{{ (lead.parent_name or '?')[0]|upper }}</span>
+                <div class="cell-person__info">
+                  <div class="cell-person__name"><a href="/leads/{{ lead.lead_id }}">{{ lead.parent_name or 'Без имени' }}</a></div>
+                  <div class="cell-person__sub">{% if lead.parent_phone %}{{ lead.parent_phone }}{% else %}{{ lead.lead_id }}{% endif %}</div>
+                </div>
+              </div>
             </td>
             <td>
-              <div>{{ lead.parent_name }}</div>
-              <div class="muted">{{ lead.parent_phone }}</div>
+              <div class="cell-person">
+                <span class="avatar av-mgr">{{ (lead.manager_name or lead.manager_login or '?')[0]|upper }}</span>
+                <div class="cell-person__info">
+                  <div class="cell-person__name" style="font-weight:500; font-size:12.5px;">{{ lead.manager_name or '—' }}</div>
+                </div>
+              </div>
             </td>
             <td>
-              <div>{{ lead.manager_name }}</div>
-              <div class="muted">{{ lead.manager_login }}</div>
+              <span class="dt-chip js-date" data-date="{{ lead.meeting_date }}">{{ lead.meeting_date }}<small>{{ lead.meeting_time }}</small></span>
             </td>
-            <td>{{ lead.meeting_date }}</td>
-            <td>{{ lead.meeting_time }}</td>
             <td>
               {% if lead.status == 'BOUGHT' %}
                 <span class="badge badge-success">Купил</span>
@@ -190,6 +197,26 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endfor %}
       </tbody>
     </table>
+    <script>
+    (function(){
+      const MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+      const WDAYS = ['вс','пн','вт','ср','чт','пт','сб'];
+      document.querySelectorAll('.js-date').forEach(el => {
+        const m = (el.dataset.date || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+        if (!m) return;
+        const d = new Date(+m[1], +m[2] - 1, +m[3]);
+        if (isNaN(d)) return;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const diff = Math.round((d - today) / 86400000);
+        let label = `${d.getDate()} ${MONTHS[d.getMonth()]}, ${WDAYS[d.getDay()]}`;
+        if (diff === 0) label = 'сегодня';
+        else if (diff === 1) label = 'завтра';
+        else if (diff === -1) label = 'вчера';
+        el.childNodes[0].textContent = label;
+        if (diff >= 0 && diff <= 1) el.style.color = 'var(--warning-text)';
+      });
+    })();
+    </script>
   {% else %}
     <div class="muted">Ближайших встреч пока нет.</div>
   {% endif %}

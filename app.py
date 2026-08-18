@@ -1291,6 +1291,10 @@ def lead_result_update(
     except PermissionError:
         return RedirectResponse('/login', status_code=303)
 
+    # Менеджеры НЕ могут менять результат встречи (пришёл/купил) — только admin/owner
+    if not (is_admin(user) or is_owner(user)):
+        return RedirectResponse(f'/leads/{lead_id}', status_code=303)
+
     lead = find_lead_by_id(lead_id)
     if not lead or not lead_visible_to_user(lead, user):
         return RedirectResponse('/leads', status_code=303)
