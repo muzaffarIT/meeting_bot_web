@@ -582,11 +582,15 @@ def api_update_status(request: Request, lead_id: str, data: StatusUpdate):
         user = require_user(request)
     except PermissionError:
         return Response(status_code=403)
-        
+
+    # Статусы меняют только admin/owner — менеджеры лишь добавляют клиентов
+    if not (is_admin(user) or is_owner(user)):
+        return Response(status_code=403)
+
     lead = find_lead_by_id(lead_id)
     if not lead or not lead_visible_to_user(lead, user):
         return Response(status_code=403)
-        
+
     update_lead_fields(lead_id, {'status': data.status})
     return {'status': 'ok'}
 
@@ -604,7 +608,11 @@ def api_bulk_update_status(request: Request, data: BulkStatusUpdate, bg_tasks: B
         user = require_user(request)
     except PermissionError:
         return Response(status_code=403)
-        
+
+    # Массовая смена статусов — только admin/owner
+    if not (is_admin(user) or is_owner(user)):
+        return Response(status_code=403)
+
     bg_tasks.add_task(run_bulk_update, data.lead_ids, data.status, user)
     return {'status': 'processing'}
 
@@ -793,6 +801,13 @@ def inbox_page(request: Request):
             .group_by(Message.lead_id)
             .all()
         )
+        # Total messages per lead (для счётчика переписки)
+        total_counts = dict(
+            db.query(Message.lead_id, func.count(Message.id))
+            .filter(Message.lead_id.in_(list(leads.keys())))
+            .group_by(Message.lead_id)
+            .all()
+        )
     finally:
         db.close()
 
@@ -811,6 +826,7 @@ def inbox_page(request: Request):
             'last_time': msg.created_at[11:16] if msg.created_at and len(msg.created_at) > 10 else '',
             'last_direction': msg.direction,
             'unread': unread_counts.get(msg.lead_id, 0),
+            'total': total_counts.get(msg.lead_id, 0),
         })
 
     return templates.TemplateResponse('inbox.html', {
@@ -1261,8 +1277,11 @@ def lead_meeting_update(
         'meeting_date': meeting_date,
         'meeting_time': meeting_time,
         'meeting_datetime_iso': meeting_iso,
-        'status': status,
     }
+
+    # Статус назначают только admin/owner; менеджер переносит дату без смены статуса
+    if is_admin(user) or is_owner(user):
+        updates['status'] = status
 
     if meeting_changed:
         updates['remind_3d_sent'] = 'НЕТ'

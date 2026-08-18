@@ -31,14 +31,14 @@
   <table>
     <thead>
       <tr>
-        <th style="width: 34px;"><input type="checkbox" id="selectAll" title="Выбрать всех"></th>
+        <th style="width: 34px;"><input type="checkbox" id="selectAll" title="Выбрать всех" {% if user.role not in ['admin', 'owner'] %}style="display:none;"{% endif %}></th>
         <th>Клиент</th><th>Менеджер</th><th>Встреча</th><th>Статус</th><th style="text-align:center;">Бот</th><th style="text-align:center;">Подтв.</th>
       </tr>
     </thead>
     <tbody>
     {% for lead in leads %}
     <tr>
-      <td><input type="checkbox" class="lead-cb" value="{{ lead.lead_id }}"></td>
+      <td>{% if user.role in ['admin', 'owner'] %}<input type="checkbox" class="lead-cb" value="{{ lead.lead_id }}">{% endif %}</td>
       <td>
         <div class="cell-person">
           <span class="avatar">{{ (lead.parent_name or '?')[0]|upper }}</span>
@@ -69,11 +69,22 @@
         {% endif %}
       </td>
       <td>
-        <select class="ajax-status" data-id="{{ lead.lead_id }}">
-          {% for st in status_choices %}
-            <option value="{{ st }}" {% if st == lead.status %}selected{% endif %}>{{ status_labels.get(st, st) }}</option>
-          {% endfor %}
-        </select>
+        {% if user.role in ['admin', 'owner'] %}
+          <select class="ajax-status" data-id="{{ lead.lead_id }}">
+            {% for st in status_choices %}
+              <option value="{{ st }}" {% if st == lead.status %}selected{% endif %}>{{ status_labels.get(st, st) }}</option>
+            {% endfor %}
+          </select>
+        {% else %}
+          {% if lead.status == 'BOUGHT' %}<span class="badge badge-success">Купил</span>
+          {% elif lead.status == 'ARRIVED' %}<span class="badge badge-success">Пришел</span>
+          {% elif lead.status == 'CONFIRMED' %}<span class="badge badge-primary">Подтверждено</span>
+          {% elif lead.status == 'BOT_STARTED' %}<span class="badge badge-warning">Бот запущен</span>
+          {% elif lead.status == 'NO_SHOW' %}<span class="badge badge-danger">Не пришел</span>
+          {% elif lead.status == 'LOST' %}<span class="badge badge-danger">Потерян</span>
+          {% elif lead.status == 'RESCHEDULED' %}<span class="badge badge-warning">Перенесено</span>
+          {% else %}<span class="badge badge-neutral">{{ status_labels.get(lead.status, lead.status) }}</span>{% endif %}
+        {% endif %}
       </td>
       <td style="text-align:center;">{% if lead.bot_started == 'ДА' %}<span class="pill pill-yes">да</span>{% else %}<span class="pill pill-no">нет</span>{% endif %}</td>
       <td style="text-align:center;">{% if lead.confirmed == 'ДА' %}<span class="pill pill-yes">да</span>{% else %}<span class="pill pill-no">нет</span>{% endif %}</td>
@@ -83,6 +94,7 @@
   </table>
 </div>
 
+{% if user.role in ['admin', 'owner'] %}
 <div id="bulk-panel" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 1px solid var(--border-accent); padding: 13px 22px; border-radius: 50px; box-shadow: var(--sh-lg); z-index: 1000; align-items: center; gap: 14px;">
   <span id="bulk-count" style="font-weight: 700; font-size: 13px;">Выбрано: 0</span>
   <select id="bulk-status" style="min-height: 36px; padding: 0 10px; border-radius: 20px; font-size: 12.5px;">
@@ -93,6 +105,7 @@
   </select>
   <button id="bulk-apply" class="btn btn-sm btn-primary" style="border-radius: 20px;">Применить</button>
 </div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {

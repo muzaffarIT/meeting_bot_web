@@ -55,6 +55,7 @@
 .inbox-item-preview { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 .inbox-item-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 .inbox-item-time { font-size: 11px; color: var(--text-3); }
+.inbox-item-count { font-size: 10px; color: var(--text-3); opacity: 0.85; }
 .inbox-unread-badge { background: #6c5ce7; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
 
 .inbox-chat {
@@ -135,6 +136,7 @@
           </div>
           <div class="inbox-item-meta">
             <div class="inbox-item-time">{{ t.last_time }}</div>
+            <div class="inbox-item-count" title="Всего сообщений">💬 {{ t.total }}</div>
             {% if t.unread %}<div class="inbox-unread-badge">{{ t.unread }}</div>{% endif %}
           </div>
         </div>
@@ -216,6 +218,8 @@ async function refreshMessages() {
 function renderMessages(msgs) {
   const container = document.getElementById('chat-messages');
   container.innerHTML = '';
+  const cnt = document.getElementById('chat-msg-count');
+  if (cnt) cnt.textContent = msgs.length + ' ' + pluralRu(msgs.length);
   for (const msg of msgs) {
     const row = document.createElement('div');
     row.className = 'msg-row ' + (msg.direction === 'out' ? 'out' : 'in');
@@ -230,6 +234,12 @@ function renderMessages(msgs) {
   container.scrollTop = container.scrollHeight;
 }
 
+function pluralRu(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'сообщение';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'сообщения';
+  return 'сообщений';
+}
 function escapeHtml(t) {
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }

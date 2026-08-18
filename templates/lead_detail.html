@@ -210,6 +210,7 @@ function toggleQr() {
       <input type="time" name="meeting_time" value="{{ lead.meeting_time }}" required>
     </label>
 
+    {% if user.role in ['admin', 'owner'] %}
     <label class="full">
       Статус встречи
       <select name="status">
@@ -220,6 +221,9 @@ function toggleQr() {
         {% endfor %}
       </select>
     </label>
+    {% else %}
+    <input type="hidden" name="status" value="{{ lead.status }}">
+    {% endif %}
 
     <button type="submit" class="full">Сохранить дату и время</button>
   </form>
