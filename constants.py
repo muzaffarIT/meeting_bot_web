@@ -147,6 +147,9 @@ DEFAULT_SETTINGS = {
     "branch_address": "",
     "location_google_url": "",
     "location_yandex_url": "",
+    # координаты для нативной локации в Telegram
+    "location_latitude": "41.293504",
+    "location_longitude": "69.245394",
 
     # напоминания
     "remind_3d_enabled": "ДА",

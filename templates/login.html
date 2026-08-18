@@ -1,12 +1,268 @@
-{% extends 'base.html' %}
-{% block content %}
-<div class="card narrow">
-  <h1>Вход</h1>
-  {% if error %}<div class="error">{{ error }}</div>{% endif %}
-  <form method="post" class="form-grid">
-    <label>Логин<input type="text" name="login" required></label>
-    <label>Пароль<input type="password" name="password" required></label>
-    <button type="submit">Войти</button>
-  </form>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход · Newton Academy CRM</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2300a2ff'/%3E%3Cstop offset='1' stop-color='%236a11cb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23g)'/%3E%3Cpath d='M20 44V20l24 24V20' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f2f5fd;
+      --ink: #131a3a;
+      --ink-2: #45507a;
+      --ink-3: #8a93b8;
+      --line: #e6eaf6;
+      --brand-1: #00a2ff;
+      --brand-2: #6a11cb;
+      --grad: linear-gradient(120deg, #00a2ff 0%, #4a5cf0 55%, #6a11cb 100%);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 18px;
+      position: relative; overflow-x: hidden;
+    }
+
+    /* фоновые пятна */
+    .blob { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; opacity: .5; }
+    .blob-1 { width: 55vw; height: 55vw; max-width: 640px; max-height: 640px; top: -18%; left: -14%; background: radial-gradient(circle, rgba(0,162,255,.26), transparent 65%); animation: b1 19s ease-in-out infinite alternate; }
+    .blob-2 { width: 50vw; height: 50vw; max-width: 560px; max-height: 560px; bottom: -18%; right: -12%; background: radial-gradient(circle, rgba(106,17,203,.22), transparent 65%); animation: b2 23s ease-in-out infinite alternate; }
+    @keyframes b1 { to { transform: translate(9vw, 7vh) scale(1.1); } }
+    @keyframes b2 { to { transform: translate(-8vw, -6vh) scale(1.06); } }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: radial-gradient(circle, rgba(19,26,58,.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      -webkit-mask-image: radial-gradient(ellipse at center, black 25%, transparent 70%);
+      mask-image: radial-gradient(ellipse at center, black 25%, transparent 70%);
+    }
+
+    .split {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1.05fr 1fr;
+      width: 100%; max-width: 900px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow:
+        0 1px 2px rgba(19,26,58,.04),
+        0 16px 40px -10px rgba(19,26,58,.12),
+        0 40px 90px -28px rgba(58,60,200,.22);
+      animation: cardIn .75s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(26px) scale(.97); } to { opacity: 1; transform: none; } }
+
+    /* ─── Левая брендовая панель: живой градиент ─── */
+    .brand-panel {
+      padding: 42px 38px;
+      background: linear-gradient(150deg, #0b41c2 0%, #4a5cf0 40%, #6a11cb 100%);
+      color: #fff;
+      display: flex; flex-direction: column; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    /* глянцевые блики поверх градиента */
+    .brand-panel::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 85% -10%, rgba(0,212,255,.35), transparent 50%),
+        radial-gradient(ellipse at -10% 110%, rgba(138,92,242,.45), transparent 55%);
+      pointer-events: none;
+    }
+    /* тонкая сетка */
+    .brand-panel::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,.14) 1px, transparent 1px);
+      background-size: 22px 22px;
+      -webkit-mask-image: linear-gradient(200deg, black 20%, transparent 75%);
+      mask-image: linear-gradient(200deg, black 20%, transparent 75%);
+      pointer-events: none;
+    }
+    .bp-inner { position: relative; z-index: 1; }
+
+    .bp-logo-row { display: flex; align-items: center; gap: 13px; margin-bottom: 30px; }
+    .bp-logo {
+      width: 52px; height: 52px; border-radius: 50%;
+      box-shadow: 0 10px 26px rgba(0,0,0,.35), 0 0 0 4px rgba(255,255,255,.16);
+    }
+    .bp-name { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -.03em; }
+    .bp-tag { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.75); margin-top: 2px; }
+
+    .brand-panel h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(25px, 3.2vw, 31px); font-weight: 900;
+      letter-spacing: -.04em; line-height: 1.18; margin-bottom: 14px;
+    }
+    .brand-panel h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, #8be6ff, #d6b8ff);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .brand-panel p { font-size: 13.5px; line-height: 1.7; color: rgba(255,255,255,.82); margin-bottom: 28px; }
+
+    .features { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+    .features li {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 13px; font-weight: 600; color: rgba(255,255,255,.92);
+    }
+    .features .fi {
+      width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22);
+      backdrop-filter: blur(4px);
+    }
+
+    /* ─── Правая форма ─── */
+    .form-panel { padding: 42px 38px; display: flex; flex-direction: column; justify-content: center; background: #fff; }
+    .form-title { font-family: 'Outfit', sans-serif; font-size: 23px; font-weight: 800; letter-spacing: -.035em; margin-bottom: 6px; }
+    .form-sub { font-size: 13px; color: var(--ink-3); margin-bottom: 24px; }
+
+    .field { margin-bottom: 15px; }
+    .field label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 7px; }
+    .input-wrap { position: relative; }
+    .input-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+    .input-wrap input {
+      width: 100%; min-height: 50px;
+      background: #f7f9ff;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      padding: 0 16px 0 44px;
+      color: var(--ink); font-size: 14.5px; font-weight: 500; outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
+    }
+    .input-wrap input::placeholder { color: #b6bdd6; font-weight: 400; }
+    .input-wrap input:focus {
+      border-color: var(--brand-1);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(0,162,255,.13);
+    }
+
+    .submit-btn {
+      width: 100%; min-height: 52px; margin-top: 8px;
+      border: none; border-radius: 15px; cursor: pointer;
+      background: var(--grad);
+      color: #fff; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 800;
+      position: relative; overflow: hidden;
+      box-shadow: 0 12px 30px -6px rgba(74,92,240,.55);
+      transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+    }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -6px rgba(74,92,240,.65); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn::after {
+      content: ''; position: absolute; top: 0; left: -100%; width: 55%; height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(255,255,255,.3), transparent);
+      transform: skewX(-20deg); animation: shine 3.2s ease infinite;
+    }
+    @keyframes shine { 0%, 60% { left: -100%; } 90%, 100% { left: 170%; } }
+
+    .error-box {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,107,129,.09); border: 1px solid rgba(255,107,129,.3);
+      color: #c01040; padding: 12px 16px; border-radius: 13px;
+      font-size: 13px; font-weight: 600; margin-bottom: 20px;
+      animation: shake .4s ease;
+    }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+    .form-footer { margin-top: 24px; text-align: center; font-size: 11.5px; color: var(--ink-3); line-height: 1.7; }
+
+    @media (max-width: 780px) {
+      .split { grid-template-columns: 1fr; max-width: 480px; }
+      .brand-panel { padding: 30px 26px 26px; }
+      .bp-logo-row { margin-bottom: 18px; }
+      .features { display: none; }
+      .brand-panel p { margin-bottom: 0; }
+      .brand-panel h1 { font-size: 22px; }
+      .form-panel { padding: 30px 26px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="split">
+    <!-- Левая панель — бренд -->
+    <div class="brand-panel">
+      <div class="bp-inner">
+        <div class="bp-logo-row">
+          <img class="bp-logo" src="/static/logo.png" alt="Newton Academy">
+          <div>
+            <div class="bp-name">Newton Academy</div>
+            <div class="bp-tag">CRM · Tashkent</div>
+          </div>
+        </div>
+
+        <h1>Управляйте записями <em>как профи</em> 🚀</h1>
+        <p>Панель управления клиентами, встречами и напоминаниями образовательного центра Newton Academy.</p>
+
+        <ul class="features">
+          <li>
+            <span class="fi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8be6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            Клиенты и записи в одном окне
+          </li>
+          <li>
+            <span class="fi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c9b3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            Чат с клиентами прямо из CRM
+          </li>
+          <li>
+            <span class="fi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffe08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            Автонапоминания по Ташкенту
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Правая панель — форма -->
+    <div class="form-panel">
+      <div class="form-title">С возвращением 👋</div>
+      <div class="form-sub">Войдите, чтобы продолжить работу</div>
+
+      {% if error %}
+      <div class="error-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="/login">
+        <div class="field">
+          <label for="login">Логин</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a93b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" id="login" name="login" placeholder="ваш логин" required autofocus autocomplete="username">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Пароль</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a93b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Войти в панель →</button>
+      </form>
+
+      <div class="form-footer">
+        Забыли пароль? Обратитесь к администратору.<br>
+        © 2026 Newton Academy
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

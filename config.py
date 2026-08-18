@@ -20,9 +20,17 @@ DEFAULT_BRANCH_NAME = os.getenv("DEFAULT_BRANCH_NAME", "Newton Academy")
 DEFAULT_BRANCH_ADDRESS = os.getenv("DEFAULT_BRANCH_ADDRESS", "")
 DEFAULT_BRANCH_LOCATION_YANDEX_URL = os.getenv("DEFAULT_BRANCH_LOCATION_YANDEX_URL", "")
 DEFAULT_BRANCH_LOCATION_GOOGLE_URL = os.getenv("DEFAULT_BRANCH_LOCATION_GOOGLE_URL", "")
+# Координаты филиала для нативной локации в Telegram (широта, долгота)
+DEFAULT_BRANCH_LATITUDE = float(os.getenv("DEFAULT_BRANCH_LATITUDE", "41.293504"))
+DEFAULT_BRANCH_LONGITUDE = float(os.getenv("DEFAULT_BRANCH_LONGITUDE", "69.245394"))
 
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "8000"))
+
+# Публичный адрес панели (например https://xxx.up.railway.app).
+# Если задан — клиентам отправляется красивая ссылка-лендинг {PUBLIC_BASE_URL}/go/{lead_id}
+# вместо «голой» t.me ссылки. Если не задан — используется прямая ссылка на бота.
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
 
 
 def validate_basic_config() -> None:

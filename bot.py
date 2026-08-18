@@ -8,6 +8,8 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 from config import (
     BOT_TOKEN,
+    DEFAULT_BRANCH_LATITUDE,
+    DEFAULT_BRANCH_LONGITUDE,
     DEFAULT_BRANCH_LOCATION_GOOGLE_URL,
     DEFAULT_BRANCH_LOCATION_YANDEX_URL,
     validate_basic_config,
@@ -206,7 +208,7 @@ async def handle_contact_back(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await safe_edit_message(
             query,
-            preconfirm_text(lang),
+            preconfirm_text(lang, lead),
             reply_markup=preconfirm_keyboard(lead, lang),
         )
 
@@ -217,11 +219,29 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     await safe_answer_callback(query)
 
+    s = get_settings_cached(force=False)
+
+    def _float_setting(key: str, default: float) -> float:
+        raw = str(s.get(key) or '').strip().replace(',', '.')
+        try:
+            return float(raw)
+        except ValueError:
+            return default
+
+    latitude = _float_setting('location_latitude', DEFAULT_BRANCH_LATITUDE)
+    longitude = _float_setting('location_longitude', DEFAULT_BRANCH_LONGITUDE)
+
     try:
+        await query.message.reply_text(
+            "📍 Вот наша локация. Нажмите «Показать в Telegram», чтобы открыть карту:"
+            if str((find_lead_by_id(query.data.split(":", 1)[1]) or {}).get("language", "ru")) != 'uz'
+            else "📍 Bizning lokatsiyamiz. Xaritani ochish uchun bosing:",
+            parse_mode='HTML',
+        )
         await context.bot.send_location(
             chat_id=query.message.chat_id,
-            latitude=41.293504,
-            longitude=69.245394
+            latitude=latitude,
+            longitude=longitude,
         )
     except Exception as e:
         logger.error(f"Failed to send location: {e}")
@@ -299,6 +319,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     user = update.effective_user
 
+    # маленький UX-штрих: показываем «печатает…» пока готовим приветствие
+    try:
+        await update.message.chat.send_action(action="typing")
+    except Exception:
+        pass
+
     update_lead_fields(
         lead_id,
         {
@@ -337,7 +363,7 @@ async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     await safe_edit_message(
         query,
-        preconfirm_text(lang),
+        preconfirm_text(lang, lead),
         reply_markup=preconfirm_keyboard(lead, lang),
     )
 

@@ -24,6 +24,7 @@ from config import (
     DEFAULT_BRANCH_LOCATION_GOOGLE_URL,
     DEFAULT_BRANCH_LOCATION_YANDEX_URL,
     DEFAULT_BRANCH_NAME,
+    PUBLIC_BASE_URL,
     SESSION_SECRET,
     validate_basic_config,
 )
@@ -214,6 +215,104 @@ def login_submit(request: Request, login: str = Form(...), password: str = Form(
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url='/login', status_code=303)
+
+
+# ═══════════════════════════════════════════════════════════
+#  Лендинг-приглашение для клиентов (публичный)
+#  Красивая branded-страница вместо «голой» t.me ссылки,
+#  чтобы родители не боялись переходить.
+# ═══════════════════════════════════════════════════════════
+
+LANDING_TEXTS = {
+    'ru': {
+        'brand_verified': 'официальный бот',
+        'badge': 'Официальное приглашение',
+        'hello': 'Здравствуйте',
+        'h1': ' — вас ждут на консультацию!',
+        'subtitle': 'Вы записаны на бесплатную консультацию в Newton Academy. Подтвердите встречу в нашем официальном Telegram-боте — это займёт меньше минуты.',
+        'dateLabel': 'Дата встречи',
+        'timeLabel': 'Время',
+        'addressLabel': 'Адрес',
+        'managerLabel': 'Ваш менеджер',
+        'cta': 'Открыть чат в Telegram',
+        'ctaSub': 'Нажмите кнопку — Telegram откроется автоматически.<br>Затем нажмите «Start» и подтвердите встречу.',
+        'step1': 'Нажмите кнопку ниже',
+        'step2': 'Откройте бота в Telegram',
+        'step3': 'Подтвердите встречу',
+        'trust': '<b>Это безопасно.</b> Мы никогда не просим номера карт, коды из SMS или пароли. Если что-то смущает — позвоните своему менеджеру, номер указан выше.',
+        'pageTitle': 'Приглашение · Newton Academy',
+        'errorTitle': 'Ссылка не найдена',
+        'errorText': 'К сожалению, эта ссылка недействительна или устарела. Попросите менеджера прислать новую персональную ссылку.',
+        'errorCta': 'Написать в поддержку',
+    },
+    'uz': {
+        'brand_verified': 'rasmiy bot',
+        'badge': 'Rasmiy taklifnoma',
+        'hello': 'Assalomu alaykum',
+        'h1': " — sizni konsultatsiyaga kutamiz!",
+        'subtitle': "Siz Newton Academy'ning bepul konsultatsiyasiga yozildingiz. Uchrashuvni bizning rasmiy Telegram botimizda tasdiqlang — bu bir daqiqadan kam vaqt oladi.",
+        'dateLabel': 'Uchrashuv sanasi',
+        'timeLabel': 'Vaqt',
+        'addressLabel': 'Manzil',
+        'managerLabel': 'Menejeringiz',
+        'cta': "Telegram'da chatni ochish",
+        'ctaSub': "Tugmani bosing — Telegram avtomatik ochiladi.<br>So'ng «Start» ni bosing va uchrashuvni tasdiqlang.",
+        'step1': 'Quyidagi tugmani bosing',
+        'step2': "Telegram'da botni oching",
+        'step3': 'Uchrashuvni tasdiqlang',
+        'trust': "<b>Bu xavfsiz.</b> Biz hech qachon karta raqamlari, SMS kodlari yoki parollarni so'ramaymiz. Nimadir shubhali bo'lsa — yuqoridagi menejer raqamiga qo'ng'iroq qiling.",
+        'pageTitle': 'Taklifnoma · Newton Academy',
+        'errorTitle': "Havola topilmadi",
+        'errorText': "Afsuski, bu havola yaroqsiz yoki eskirgan. Menejerdan yangi shaxsiy havola yuborishini so'rang.",
+        'errorCta': "Qo'llab-quvvatlashga yozish",
+    },
+}
+
+
+def build_invite_link(lead_id: str) -> tuple[str, bool]:
+    """Красивая ссылка для клиента: лендинг (если задан PUBLIC_BASE_URL) или t.me deep-link.
+    Возвращает (url, is_landing)."""
+    if PUBLIC_BASE_URL:
+        return f'{PUBLIC_BASE_URL}/go/{lead_id}', True
+    return create_deep_linked_url(BOT_USERNAME, lead_id), False
+
+
+@app.get('/go/{lead_id}', response_class=HTMLResponse)
+def public_landing(request: Request, lead_id: str, lang: str = ''):
+    lead = find_lead_by_id(lead_id.strip())
+
+    if not lead:
+        lang = lang if lang in ('ru', 'uz') else 'ru'
+        return templates.TemplateResponse('landing.html', {
+            'request': request,
+            'error': True,
+            'lang': lang,
+            't': LANDING_TEXTS[lang],
+            'bot_username': BOT_USERNAME,
+        })
+
+    lang = lang if lang in ('ru', 'uz') else (str(lead.get('language', 'ru')).strip() or 'ru')
+
+    s = get_settings_cached(force=False)
+    branch_address = str(s.get('branch_address') or DEFAULT_BRANCH_ADDRESS or '').strip() or str(lead.get('address_text', '')).strip()
+
+    deep_link = create_deep_linked_url(BOT_USERNAME, lead_id.strip())
+
+    return templates.TemplateResponse('landing.html', {
+        'request': request,
+        'error': False,
+        'lang': lang,
+        't': LANDING_TEXTS[lang],
+        'parent_name': str(lead.get('parent_name', '')).strip() or ('Родитель' if lang == 'ru' else 'Ota-ona'),
+        'meeting_date': str(lead.get('meeting_date', '')).strip(),
+        'meeting_time': str(lead.get('meeting_time', '')).strip(),
+        'address': branch_address,
+        'manager_name': str(lead.get('manager_name', '')).strip(),
+        'manager_phone': str(lead.get('manager_phone', '')).strip(),
+        'deep_link': deep_link,
+        'bot_username': BOT_USERNAME,
+    })
+
 
 
 @app.get('/', response_class=HTMLResponse)
@@ -519,10 +618,25 @@ def lead_detail(request: Request, lead_id: str):
     if not lead or not lead_visible_to_user(lead, user):
         return RedirectResponse('/leads', status_code=303)
     deep_link = create_deep_linked_url(BOT_USERNAME, lead_id)
+    invite_link, invite_is_landing = build_invite_link(lead_id)
     bot_started = normalize_bool(lead.get('bot_started', ''))
     # Mark messages as read when manager opens the lead
     mark_messages_read(lead_id)
     messages = get_messages(lead_id)
+
+    # Ссылки для быстрой отправки клиенту
+    parent_phone_digits = ''.join(ch for ch in str(lead.get('parent_phone', '')) if ch.isdigit())
+    first_name = str(lead.get('parent_name', '')).strip().split()[0] if str(lead.get('parent_name', '')).strip() else ''
+    if invite_is_landing:
+        share_text = (f'Здравствуйте, {first_name}! 👋\n\nВы записаны на консультацию в Newton Academy. '
+                      f'Подробности и подтверждение встречи — по официальной ссылке:\n{invite_link}')
+    else:
+        share_text = (f'Здравствуйте, {first_name}! 👋\n\nВы записаны на консультацию в Newton Academy. '
+                      f'Подробности и подтверждение встречи — в нашем официальном боте:\n{invite_link}')
+    from urllib.parse import quote
+    wa_share = f'https://wa.me/{parent_phone_digits}?text={quote(share_text)}' if parent_phone_digits else ''
+    tg_share = f'https://t.me/share/url?url={quote(invite_link)}&text={quote(share_text)}'
+
     return templates.TemplateResponse(
     'lead_detail.html',
     {
@@ -530,12 +644,16 @@ def lead_detail(request: Request, lead_id: str):
         'user': user,
         'lead': lead,
         'deep_link': deep_link,
+        'invite_link': invite_link,
+        'invite_is_landing': invite_is_landing,
+        'wa_share': wa_share,
+        'tg_share': tg_share,
         'status_choices': STATUS_CHOICES,
         'status_labels': STATUS_LABELS,
         'bot_started': bot_started,
         'chat_messages': messages,
     },
-)
+    )
 
 
 @app.post('/leads/{lead_id}/send_message')
@@ -1055,6 +1173,8 @@ def settings_save(
     branch_address: str = Form(''),
     location_google_url: str = Form(''),
     location_yandex_url: str = Form(''),
+    location_latitude: str = Form(''),
+    location_longitude: str = Form(''),
 
     remind_3d_enabled: str = Form('НЕТ'),
     remind_3d_hours: str = Form('72'),
@@ -1086,6 +1206,8 @@ def settings_save(
         'branch_address': branch_address.strip(),
         'location_google_url': location_google_url.strip(),
         'location_yandex_url': location_yandex_url.strip(),
+        'location_latitude': location_latitude.strip(),
+        'location_longitude': location_longitude.strip(),
 
         'remind_3d_enabled': remind_3d_enabled.strip(),
         'remind_3d_hours': remind_3d_hours.strip(),
