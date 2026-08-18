@@ -11,3 +11,6 @@ service_account.json
 *.zip
 *.tar.gz
 .git/
+
+# Railway CLI link
+.railway/
