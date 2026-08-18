@@ -1316,6 +1316,11 @@ def lead_result_update(
     return RedirectResponse(url=f'/leads/{lead_id}', status_code=303)
 
 if __name__ == '__main__':
+    import os
+
     import uvicorn
 
-    uvicorn.run('app:app', host=APP_HOST, port=APP_PORT, reload=True)
+    # Railway передаёт порт через PORT и требует слушать 0.0.0.0
+    port = int(os.getenv('PORT') or APP_PORT)
+    host = '0.0.0.0' if os.getenv('RAILWAY_SERVICE_ID') else APP_HOST
+    uvicorn.run('app:app', host=host, port=port, reload=not os.getenv('RAILWAY_SERVICE_ID'))
