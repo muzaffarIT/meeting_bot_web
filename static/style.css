@@ -1078,3 +1078,34 @@ a.mono-chip:hover { color: var(--accent-2); background: var(--accent-subtle); }
     box-shadow: var(--sh-lg);
   }
 }
+
+/* ── Кнопка «☰ Меню» — явная и понятная ── */
+.burger {
+  width: auto !important; min-height: 40px;
+  padding: 0 14px 0 12px !important;
+  gap: 7px;
+  border-radius: 999px !important;
+  background: var(--surface-3) !important;
+  border: 1.5px solid var(--border-light) !important;
+  color: var(--text) !important;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: none !important;
+}
+.burger::before { display: none !important; }
+.burger:hover { box-shadow: none !important; transform: none !important; background: var(--surface-3) !important; }
+.burger:active { transform: scale(0.95) !important; }
+.burger svg { width: 15px; height: 15px; flex-shrink: 0; }
+.burger-label { white-space: nowrap; }
+.burger-ico-close { display: none; }
+.burger.is-open .burger-ico-open { display: none; }
+.burger.is-open .burger-ico-close { display: block; }
+.burger.is-open { border-color: rgba(0,162,255,0.5) !important; color: #4dc3ff !important; }
+
+@media (max-width: 1023px) {
+  .burger { display: inline-flex; }
+}
+@media (max-width: 400px) {
+  .burger-label { display: none; }   /* на очень узких — только иконка */
+  .burger { padding: 0 11px !important; }
+}

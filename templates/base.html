@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&family=Onest:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=2.7">
+  <link rel="stylesheet" href="/static/style.css?v=2.8">
   <script>
     (function(){
       var t = localStorage.getItem('theme') || 'dark';
@@ -97,8 +97,10 @@
   <div class="main-wrap">
 
     <header class="topbar-lite">
-      <button class="burger" id="burger" type="button" title="Меню" aria-label="Открыть меню">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <button class="burger" id="burger" type="button" aria-label="Открыть меню">
+        <svg class="burger-ico-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg class="burger-ico-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span class="burger-label">Меню</span>
       </button>
 
       <a href="/" class="topbar-logo" title="Newton Academy">
@@ -165,11 +167,12 @@
     var sidebar = document.getElementById('sidebar');
     var overlay = document.getElementById('side-overlay');
     var burger = document.getElementById('burger');
-    function closeSidebar(){ sidebar.classList.remove('open'); overlay.classList.remove('show'); document.body.classList.remove('no-scroll'); }
+    function closeSidebar(){ sidebar.classList.remove('open'); overlay.classList.remove('show'); document.body.classList.remove('no-scroll'); burger.classList.remove('is-open'); }
     if (burger) burger.addEventListener('click', function(){
       sidebar.classList.toggle('open');
       overlay.classList.toggle('show', sidebar.classList.contains('open'));
       document.body.classList.toggle('no-scroll', sidebar.classList.contains('open'));
+      burger.classList.toggle('is-open', sidebar.classList.contains('open'));
     });
     if (overlay) overlay.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSidebar(); });
