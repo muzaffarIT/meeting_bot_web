@@ -42,10 +42,13 @@
 </div>
 
 <div class="card">
-  <div class="page-header" style="margin-bottom: 18px;">
+  <div class="card-head">
+    <span class="card-head__icon" style="background: rgba(253,121,168,0.10); border-color: rgba(253,121,168,0.3);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fd79a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </span>
     <div>
-      <h2>Список сотрудников</h2>
-      <p class="muted">Доступы к CRM и контактные данные команды.</p>
+      <div class="card-head__title">Список сотрудников</div>
+      <div class="card-head__sub">Доступы к CRM и контактные данные команды</div>
     </div>
   </div>
 
@@ -59,8 +62,7 @@
     <table>
       <thead>
         <tr>
-          <th>Логин</th>
-          <th>ФИО</th>
+          <th>Сотрудник</th>
           <th>Роль</th>
           <th>Телефон</th>
           <th>Telegram</th>
@@ -83,19 +85,16 @@
 
           <tr>
             <td>
-              {% if can_manage %}
-                <a href="/users/{{ item.login }}/edit"><strong>{{ item.login }}</strong></a>
-              {% else %}
-                <strong>{{ item.login }}</strong>
-              {% endif %}
-            </td>
-
-            <td>
-              {% if can_manage %}
-                <a href="/users/{{ item.login }}/edit">{{ item.full_name }}</a>
-              {% else %}
-                {{ item.full_name }}
-              {% endif %}
+              <div class="cell-person">
+                <span class="avatar av-mgr" style="width:34px;height:34px;font-size:13px;">{{ (item.full_name or item.login or '?')[0]|upper }}</span>
+                <div class="cell-person__info">
+                  <div class="cell-person__name">
+                    {% if can_manage %}<a href="/users/{{ item.login }}/edit" style="color:inherit;">{{ item.full_name }}</a>
+                    {% else %}{{ item.full_name }}{% endif %}
+                  </div>
+                  <div class="cell-person__sub">@{{ item.login }}</div>
+                </div>
+              </div>
             </td>
 
             <td>
@@ -134,7 +133,7 @@
               {% endif %}
             </td>
 
-            <td>{{ item.created_at or '—' }}</td>
+            <td><span class="js-date2">{{ (item.created_at or '')[:10] }}</span></td>
 
             <td>
               {% if user.role in ['owner', 'admin'] %}
@@ -160,5 +159,16 @@
     <div class="muted">Сотрудники пока не добавлены.</div>
   {% endif %}
 </div>
+
+<script>
+(function(){
+  var MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  document.querySelectorAll('.js-date2').forEach(function(el){
+    var m = (el.textContent || '').trim().match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) { if(!el.textContent.trim()) el.textContent = '—'; return; }
+    el.textContent = (+m[3]) + ' ' + MONTHS[+m[2]-1] + ' ' + m[1];
+  });
+})();
+</script>
 
 {% endblock %}

@@ -4,30 +4,53 @@
 <div class="page-header">
   <div>
     <h1>Новый клиент</h1>
-    <p class="muted">Создание новой встречи и генерация ссылки в Telegram-бота.</p>
+    <p class="muted">Заполните карточку — система сгенерирует персональную ссылку-приглашение для родителя.</p>
   </div>
 </div>
 
-<div class="card">
-  <form method="post" action="/leads/new" class="form-grid two-cols">
+<div class="card" style="max-width: 860px;">
+  <div class="card-head">
+    <span class="card-head__icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Данные клиента</div>
+      <div class="card-head__sub">После создания откроется карточка со ссылкой-приглашением</div>
+    </div>
+  </div>
+
+  <form method="post" action="/leads/new" class="form-grid two-cols" id="lead-form">
     <label>
       Имя родителя
-      <input type="text" name="parent_name" required placeholder="Введите имя родителя">
+      <input type="text" name="parent_name" required placeholder="Например: Малика Рахимова" autofocus>
     </label>
 
     <label>
       Телефон родителя
-      <input type="text" name="parent_phone" required placeholder="998901234567">
+      <input type="tel" name="parent_phone" required placeholder="+998 90 123 45 67">
     </label>
 
     <label>
       Дата встречи
-      <input type="date" name="meeting_date" required>
+      <input type="date" name="meeting_date" id="meeting-date" required>
+      <span class="quick-dates">
+        <button type="button" class="quick-date" data-days="0">Сегодня</button>
+        <button type="button" class="quick-date" data-days="1">Завтра</button>
+        <button type="button" class="quick-date" data-days="2">Через 2 дня</button>
+        <button type="button" class="quick-date" data-days="7">Через неделю</button>
+      </span>
     </label>
 
     <label>
       Время встречи
-      <input type="time" name="meeting_time" required>
+      <input type="time" name="meeting_time" id="meeting-time" required>
+      <span class="quick-dates">
+        <button type="button" class="quick-time" data-time="10:00">10:00</button>
+        <button type="button" class="quick-time" data-time="12:00">12:00</button>
+        <button type="button" class="quick-time" data-time="14:00">14:00</button>
+        <button type="button" class="quick-time" data-time="16:00">16:00</button>
+        <button type="button" class="quick-time" data-time="18:00">18:00</button>
+      </span>
     </label>
 
     <label>
@@ -42,20 +65,76 @@
     </label>
 
     <label>
-      Язык
+      Язык клиента
       <select name="language">
-        <option value="ru">Русский</option>
-        <option value="uz">O'zbekcha</option>
+        <option value="ru">🇷🇺 Русский</option>
+        <option value="uz">🇺🇿 O'zbekcha</option>
       </select>
     </label>
 
     <label class="full">
       Заметки
-      <textarea name="notes" placeholder="Дополнительная информация по клиенту"></textarea>
+      <textarea name="notes" placeholder="Дополнительная информация по клиенту (необязательно)"></textarea>
     </label>
 
-    <button type="submit" class="full">Создать клиента</button>
+    <button type="submit" class="full" id="submit-btn" style="min-height: 52px; font-size: 15px;">
+      ✨ Создать клиента и получить ссылку
+    </button>
   </form>
 </div>
+
+<style>
+.quick-dates { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+.quick-date, .quick-time {
+  font-size: 11px; font-weight: 700; padding: 4px 11px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text-2);
+  cursor: pointer; transition: all 0.15s; min-height: 0; box-shadow: none;
+}
+.quick-date:hover, .quick-time:hover {
+  border-color: rgba(0,162,255,0.5); color: #4dc3ff;
+  background: rgba(0,162,255,0.08); transform: none; box-shadow: none;
+}
+.quick-date.applied, .quick-time.applied {
+  background: linear-gradient(135deg, rgba(0,162,255,0.2), rgba(106,17,203,0.25));
+  border-color: rgba(0,162,255,0.55); color: #7fd4ff;
+}
+</style>
+
+<script>
+(function(){
+  // Быстрый выбор дат
+  var dateInput = document.getElementById('meeting-date');
+  var WD = ['вс','пн','вт','ср','чт','пт','сб'];
+  document.querySelectorAll('.quick-date').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var d = new Date();
+      d.setDate(d.getDate() + parseInt(btn.dataset.days, 10));
+      var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      dateInput.value = iso;
+      document.querySelectorAll('.quick-date').forEach(function(b){ b.classList.remove('applied'); });
+      btn.classList.add('applied');
+      var label = btn.textContent;
+      btn.title = label;
+    });
+  });
+  // Быстрый выбор времени
+  var timeInput = document.getElementById('meeting-time');
+  document.querySelectorAll('.quick-time').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      timeInput.value = btn.dataset.time;
+      document.querySelectorAll('.quick-time').forEach(function(b){ b.classList.remove('applied'); });
+      btn.classList.add('applied');
+    });
+  });
+  // Кнопка отправки — состояние загрузки
+  var form = document.getElementById('lead-form');
+  form.addEventListener('submit', function(){
+    var btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Создаём…';
+  });
+})();
+</script>
 
 {% endblock %}

@@ -1,26 +1,149 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Статистика по клиентам</h1>
+
+<div class="page-header">
+  <div>
+    <h1>Отчёты</h1>
+    <p class="muted">Общая воронка и эффективность менеджеров. Доступно администраторам.</p>
+  </div>
+</div>
+
 <div class="stats-grid">
-  <div class="card stat"><div class="stat-num">{{ global_stats.total }}</div><div>Всего лидов</div></div>
-  <div class="card stat"><div class="stat-num">{{ global_stats.bot_started }}</div><div>Зашли в бота</div></div>
-  <div class="card stat"><div class="stat-num">{{ global_stats.confirmed }}</div><div>Подтвердили</div></div>
-  <div class="card stat"><div class="stat-num">{{ global_stats.arrived }}</div><div>Пришли</div></div>
-  <div class="card stat"><div class="stat-num">{{ global_stats.bought }}</div><div>Купили</div></div>
+  <div class="stat">
+    <div class="stat-num">{{ global_stats.total }}</div>
+    <div>Всего лидов</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">{{ global_stats.bot_started }}</div>
+    <div>Зашли в бота</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">{{ global_stats.confirmed }}</div>
+    <div>Подтвердили</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">{{ global_stats.arrived }}</div>
+    <div>Пришли</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">{{ global_stats.bought }}</div>
+    <div>Купили</div>
+  </div>
 </div>
-<div class="card">
-  <table>
-    <tr><th>Сотрудник</th><th>Клиенты</th><th>Start</th><th>Подтвердили</th><th>Пришли</th><th>Купили</th></tr>
-    {% for row in per_manager %}
-    <tr>
-      <td>{{ row.manager.full_name }} ({{ row.manager.login }})</td>
-      <td>{{ row.stats.total }}</td>
-      <td>{{ row.stats.bot_started }}</td>
-      <td>{{ row.stats.confirmed }}</td>
-      <td>{{ row.stats.arrived }}</td>
-      <td>{{ row.stats.bought }}</td>
-    </tr>
+
+{% if global_stats.total > 0 %}
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-head">
+    <span class="card-head__icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Общая воронка</div>
+      <div class="card-head__sub">Конверсия от общего числа лидов</div>
+    </div>
+  </div>
+  <div class="funnel">
+    {% set stages = [
+      ('Зашли в бота', global_stats.bot_started, 'v1'),
+      ('Подтвердили', global_stats.confirmed, 'v3'),
+      ('Пришли', global_stats.arrived, 'v4'),
+      ('Купили', global_stats.bought, 'v5'),
+    ] %}
+    {% for label, val, color in stages %}
+    <div class="funnel-row">
+      <div class="funnel-label">{{ label }}</div>
+      <div class="funnel-track">
+        <div class="funnel-bar funnel-bar--{{ color }}" style="width: {{ (val / global_stats.total * 100) | round(1) }}%;"></div>
+      </div>
+      <div class="funnel-value">{{ val }} <small>({{ (val / global_stats.total * 100) | round(1) }}%)</small></div>
+    </div>
     {% endfor %}
-  </table>
+  </div>
 </div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head">
+    <span class="card-head__icon" style="background: rgba(253,121,168,0.10); border-color: rgba(253,121,168,0.3);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fd79a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </span>
+    <div>
+      <div class="card-head__title">Эффективность менеджеров</div>
+      <div class="card-head__sub">Клиенты, подтверждения и продажи по каждому сотруднику</div>
+    </div>
+  </div>
+
+  {% if per_manager %}
+  <div class="table-responsive">
+  <table>
+    <thead>
+      <tr>
+        <th>Сотрудник</th>
+        <th style="text-align:center;">Клиенты</th>
+        <th style="text-align:center;">Бот</th>
+        <th style="text-align:center;">Подтвердили</th>
+        <th style="text-align:center;">Пришли</th>
+        <th style="text-align:center;">Купили</th>
+        <th style="min-width:140px;">Конверсия в покупку</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in per_manager %}
+      <tr>
+        <td>
+          <div class="cell-person">
+            <span class="avatar av-mgr" style="width:34px;height:34px;font-size:13px;">{{ (row.manager.full_name or row.manager.login or '?')[0]|upper }}</span>
+            <div class="cell-person__info">
+              <div class="cell-person__name">{{ row.manager.full_name }}</div>
+              <div class="cell-person__sub">@{{ row.manager.login }}</div>
+            </div>
+          </div>
+        </td>
+        <td style="text-align:center; font-weight:700;">{{ row.stats.total }}</td>
+        <td style="text-align:center;">{{ row.stats.bot_started }}</td>
+        <td style="text-align:center;">{{ row.stats.confirmed }}</td>
+        <td style="text-align:center;">{{ row.stats.arrived }}</td>
+        <td style="text-align:center; font-weight:700; color: var(--success-text);">{{ row.stats.bought }}</td>
+        <td>
+          {% set pct = (row.stats.bought / row.stats.total * 100) | round(1) if row.stats.total else 0 %}
+          <div class="conv-cell">
+            <div class="conv-track"><div class="conv-bar" style="width: {{ pct }}%;"></div></div>
+            <span class="conv-num">{{ pct }}%</span>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <div class="muted">Нет данных по менеджерам.</div>
+  {% endif %}
+</div>
+
+<style>
+.funnel { display: flex; flex-direction: column; gap: 14px; }
+.funnel-row { display: grid; grid-template-columns: 130px 1fr 110px; align-items: center; gap: 14px; }
+.funnel-label { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.funnel-track { height: 14px; background: var(--neutral-bg); border-radius: 99px; overflow: hidden; }
+.funnel-bar { height: 100%; border-radius: 99px; animation: funnelGrow 0.9s cubic-bezier(0.22,1,0.36,1) both; }
+.funnel-bar--v1 { background: linear-gradient(90deg, #00a2ff, #6a11cb); }
+.funnel-bar--v3 { background: linear-gradient(90deg, #fdcb6e, #e17055); }
+.funnel-bar--v4 { background: linear-gradient(90deg, #00b894, #00cec9); }
+.funnel-bar--v5 { background: linear-gradient(90deg, #fd79a8, #e17055); }
+@keyframes funnelGrow { from { width: 0 !important; } }
+.funnel-value { font-size: 13px; font-weight: 700; text-align: right; white-space: nowrap; }
+.funnel-value small { font-size: 11px; font-weight: 500; color: var(--text-3); }
+
+.conv-cell { display: flex; align-items: center; gap: 9px; }
+.conv-track { flex: 1; height: 8px; background: var(--neutral-bg); border-radius: 99px; overflow: hidden; }
+.conv-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #00b894, #00cec9); animation: funnelGrow 0.8s ease both; }
+.conv-num { font-size: 12px; font-weight: 700; color: var(--success-text); min-width: 48px; text-align: right; }
+
+@media (max-width: 768px) {
+  .funnel-row { grid-template-columns: 1fr; gap: 6px; }
+  .funnel-value { text-align: left; }
+}
+</style>
+
 {% endblock %}
