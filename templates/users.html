@@ -84,7 +84,7 @@
           %}
 
           <tr>
-            <td>
+            <td data-label="Сотрудник">
               <div class="cell-person">
                 <span class="avatar av-mgr" style="width:34px;height:34px;font-size:13px;">{{ (item.full_name or item.login or '?')[0]|upper }}</span>
                 <div class="cell-person__info">
@@ -97,7 +97,7 @@
               </div>
             </td>
 
-            <td>
+            <td data-label="Роль">
               {% if item.role == 'owner' %}
                 <span class="badge badge-danger">Владелец</span>
               {% elif item.role == 'admin' %}
@@ -109,7 +109,7 @@
               {% endif %}
             </td>
 
-            <td>
+            <td data-label="Телефон">
               {% if item.phone %}
                 <a href="tel:{{ item.phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}">{{ item.phone }}</a>
               {% else %}
@@ -117,7 +117,7 @@
               {% endif %}
             </td>
 
-            <td>
+            <td data-label="Telegram">
               {% if item.telegram %}
                 <a href="https://t.me/{{ item.telegram.lstrip('@') }}" target="_blank">@{{ item.telegram.lstrip('@') }}</a>
               {% else %}
@@ -125,7 +125,7 @@
               {% endif %}
             </td>
 
-            <td>
+            <td data-label="Статус">
               {% if item.active == 'ДА' %}
                 <span class="badge badge-success">Активен</span>
               {% else %}
@@ -133,9 +133,9 @@
               {% endif %}
             </td>
 
-            <td><span class="js-date2">{{ (item.created_at or '')[:10] }}</span></td>
+            <td data-label="Создан"><span class="js-date2">{{ (item.created_at or '')[:10] }}</span></td>
 
-            <td>
+            <td data-label="" style="justify-content:flex-end; gap:6px; flex-wrap:wrap;">
               {% if user.role in ['owner', 'admin'] %}
 
                 {# ✅ не удаляем твою логику, но добавляем проверку can_manage #}

@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <tbody>
         {% for lead in upcoming %}
           <tr>
-            <td>
+            <td data-label="Клиент">
               <div class="cell-person">
                 <span class="avatar">{{ (lead.parent_name or '?')[0]|upper }}</span>
                 <div class="cell-person__info">
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
               </div>
             </td>
-            <td>
+            <td data-label="Менеджер">
               <div class="cell-person">
                 <span class="avatar av-mgr">{{ (lead.manager_name or lead.manager_login or '?')[0]|upper }}</span>
                 <div class="cell-person__info">
@@ -169,10 +169,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
               </div>
             </td>
-            <td>
+            <td data-label="Встреча">
               <span class="dt-chip js-date" data-date="{{ lead.meeting_date }}">{{ lead.meeting_date }}<small>{{ lead.meeting_time }}</small></span>
             </td>
-            <td>
+            <td data-label="Статус">
               {% if lead.status == 'BOUGHT' %}
                 <span class="badge badge-success">Купил</span>
               {% elif lead.status == 'ARRIVED' %}

@@ -90,7 +90,7 @@
     <tbody>
       {% for row in per_manager %}
       <tr>
-        <td>
+        <td data-label="Сотрудник">
           <div class="cell-person">
             <span class="avatar av-mgr" style="width:34px;height:34px;font-size:13px;">{{ (row.manager.full_name or row.manager.login or '?')[0]|upper }}</span>
             <div class="cell-person__info">
@@ -99,12 +99,12 @@
             </div>
           </div>
         </td>
-        <td style="text-align:center; font-weight:700;">{{ row.stats.total }}</td>
-        <td style="text-align:center;">{{ row.stats.bot_started }}</td>
-        <td style="text-align:center;">{{ row.stats.confirmed }}</td>
-        <td style="text-align:center;">{{ row.stats.arrived }}</td>
-        <td style="text-align:center; font-weight:700; color: var(--success-text);">{{ row.stats.bought }}</td>
-        <td>
+        <td data-label="Клиенты" style="text-align:center; font-weight:700;">{{ row.stats.total }}</td>
+        <td data-label="Бот" style="text-align:center;">{{ row.stats.bot_started }}</td>
+        <td data-label="Подтвердили" style="text-align:center;">{{ row.stats.confirmed }}</td>
+        <td data-label="Пришли" style="text-align:center;">{{ row.stats.arrived }}</td>
+        <td data-label="Купили" style="text-align:center; font-weight:700; color: var(--success-text);">{{ row.stats.bought }}</td>
+        <td data-label="Конверсия">
           {% set pct = (row.stats.bought / row.stats.total * 100) | round(1) if row.stats.total else 0 %}
           <div class="conv-cell">
             <div class="conv-track"><div class="conv-bar" style="width: {{ pct }}%;"></div></div>

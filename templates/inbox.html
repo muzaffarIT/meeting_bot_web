@@ -73,6 +73,8 @@
   gap: 12px;
 }
 .inbox-chat-header a { font-size: 12px; color: var(--text-3); text-decoration: none; margin-left: auto; }
+.chat-back { display: none; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); cursor: pointer; align-items: center; justify-content: center; flex-shrink: 0; }
+@media (max-width: 768px) { .chat-back { display: flex; } }
 .inbox-chat-header a:hover { color: var(--text); }
 .inbox-messages {
   flex: 1;
@@ -156,6 +158,9 @@
 
     <div id="chat-view" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
       <div class="inbox-chat-header">
+        <button type="button" class="chat-back" id="chat-back" onclick="closeChat()" aria-label="Назад к списку">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
         <div class="inbox-avatar" id="chat-avatar" style="width:36px;height:36px;font-size:14px;">?</div>
         <div>
           <div style="font-weight:700;font-size:14px;" id="chat-name">—</div>
@@ -180,8 +185,16 @@
 <script>
 let currentLeadId = null;
 
+function closeChat() {
+  currentLeadId = null;
+  document.getElementById('chat-view').style.display = 'none';
+  document.getElementById('chat-empty').style.display = 'flex';
+  document.getElementById('chat-panel').classList.remove('open');
+}
+
 async function loadChat(leadId, name, phone) {
   currentLeadId = leadId;
+  document.getElementById('chat-panel').classList.add('open');
 
   // Update header
   document.getElementById('chat-avatar').textContent = name ? name[0].toUpperCase() : '?';
