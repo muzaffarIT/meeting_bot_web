@@ -743,20 +743,8 @@ button:active, .btn:active { transform: translateY(0); box-shadow: none; }
 .stats-grid .stat:nth-child(4) { animation-delay: 0.24s; }
 .stats-grid .stat:nth-child(5) { animation-delay: 0.30s; }
 
-/* Table rows */
-table tbody tr {
-  animation: fadeIn 0.3s ease both;
-}
-table tbody tr:nth-child(1)  { animation-delay: 0.10s; }
-table tbody tr:nth-child(2)  { animation-delay: 0.15s; }
-table tbody tr:nth-child(3)  { animation-delay: 0.20s; }
-table tbody tr:nth-child(4)  { animation-delay: 0.25s; }
-table tbody tr:nth-child(5)  { animation-delay: 0.30s; }
-table tbody tr:nth-child(6)  { animation-delay: 0.33s; }
-table tbody tr:nth-child(7)  { animation-delay: 0.36s; }
-table tbody tr:nth-child(8)  { animation-delay: 0.39s; }
-table tbody tr:nth-child(9)  { animation-delay: 0.42s; }
-table tbody tr:nth-child(10) { animation-delay: 0.45s; }
+/* Table rows — без анимаций: на больших таблицах вызывают лаги */
+table tbody tr { animation: none; }
 
 /* ═══════════════════════════════════════════════════════
    SCROLLBAR
@@ -936,7 +924,6 @@ a.mono-chip:hover { color: var(--accent-2); background: var(--accent-subtle); }
     border-radius: var(--radius) !important;
     margin-bottom: 10px;
     padding: 6px 14px 8px;
-    animation: fadeUp 0.3s ease both;
   }
   table tbody tr:hover td { background: transparent !important; }
   table tbody td {
@@ -1038,3 +1025,24 @@ a.mono-chip:hover { color: var(--accent-2); background: var(--accent-subtle); }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .steps { gap: 6px; }
 }
+
+/* ── Пагинация ── */
+.pagination {
+  display: flex; gap: 6px; justify-content: center; align-items: center;
+  margin-top: 18px; flex-wrap: wrap;
+}
+.page-btn {
+  min-height: 38px; padding: 0 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--text-2);
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  transition: all 0.15s;
+}
+.page-btn:hover { color: var(--text); border-color: var(--border-light); background: var(--surface-3); text-decoration: none; }
+.page-btn.active {
+  background: linear-gradient(135deg, #00a2ff, #6a11cb);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 4px 14px rgba(0,162,255,0.35);
+}
+.page-btn.disabled { opacity: 0.35; pointer-events: none; }

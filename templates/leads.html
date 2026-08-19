@@ -5,7 +5,7 @@
   <div>
     <h1>Клиенты</h1>
     <p class="muted">
-      {% if leads|length %}Всего в выборке: <b style="color:var(--text)">{{ leads|length }}</b>{% else %}Клиенты не найдены{% endif %}
+      {% if total_count %}Найдено: <b style="color:var(--text)">{{ total_count }}</b>{% if total_pages > 1 %} · страница {{ page }} из {{ total_pages }}{% endif %}{% else %}Клиенты не найдены{% endif %}
     </p>
   </div>
   <div class="actions">
@@ -92,6 +92,24 @@
     {% endfor %}
     </tbody>
   </table>
+
+  {% if total_pages > 1 %}
+  <div class="pagination">
+    {% set qp = {'status': current_status, 'day': current_day, 'q': current_q} %}
+    <a class="page-btn {% if page <= 1 %}disabled{% endif %}"
+       href="/leads?status={{ current_status }}&day={{ current_day }}&q={{ current_q }}&page={{ page - 1 }}">← Назад</a>
+
+    {% set start = [1, page - 2] | max %}
+    {% set end = [total_pages, start + 4] | min %}
+    {% for p in range(start, end + 1) %}
+      <a class="page-btn {% if p == page %}active{% endif %}"
+         href="/leads?status={{ current_status }}&day={{ current_day }}&q={{ current_q }}&page={{ p }}">{{ p }}</a>
+    {% endfor %}
+
+    <a class="page-btn {% if page >= total_pages %}disabled{% endif %}"
+       href="/leads?status={{ current_status }}&day={{ current_day }}&q={{ current_q }}&page={{ page + 1 }}">Вперёд →</a>
+  </div>
+  {% endif %}
 </div>
 
 {% if user.role in ['admin', 'owner'] %}

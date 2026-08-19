@@ -355,11 +355,14 @@ def debug_db():
         db.close()
 
 @app.get('/leads', response_class=HTMLResponse)
-def leads_list(request: Request, status: str = '', day: str = '', q: str = ''):
+def leads_list(request: Request, status: str = '', day: str = '', q: str = '', page: int = 1):
     try:
         user = require_user(request)
     except PermissionError:
         return RedirectResponse('/login', status_code=303)
+
+    PAGE_SIZE = 50
+    page = max(1, page)
 
     leads = [lead for lead in get_all_leads() if lead_visible_to_user(lead, user)]
     if status:
@@ -383,19 +386,28 @@ def leads_list(request: Request, status: str = '', day: str = '', q: str = ''):
         leads = filtered
 
     leads = sorted(leads, key=lambda x: str(x.get('created_at', '')).strip() or str(x.get('meeting_datetime_iso', '')).strip(), reverse=True)
+
+    total_count = len(leads)
+    total_pages = max(1, (total_count + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+    leads_page = leads[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
+
     return templates.TemplateResponse(
     'leads.html',
     {
         'request': request,
         'user': user,
-        'leads': leads,
+        'leads': leads_page,
+        'total_count': total_count,
+        'page': page,
+        'total_pages': total_pages,
         'status_choices': STATUS_CHOICES,
         'status_labels': STATUS_LABELS,
         'current_status': status,
         'current_day': day,
         'current_q': q,
     },
-)
+    )
 
 @app.get('/leads/export')
 def leads_export(request: Request, status: str = '', day: str = '', q: str = ''):
@@ -551,22 +563,33 @@ def get_notifications(request: Request):
         user = require_user(request)
     except PermissionError:
         return {'new_leads_count': 0, 'unread_messages': 0, 'new_leads': []}
-        
-    leads = [lead for lead in get_all_leads() if lead_visible_to_user(lead, user)]
-    new_leads = [l for l in leads if str(l.get('status', '')).strip() == 'NEW']
-    unread = count_unread_messages()
-    # Return up to 8 new leads for dropdown
-    items = [
-        {
-            'lead_id': l.get('lead_id', ''),
-            'parent_name': l.get('parent_name', '—'),
-            'parent_phone': l.get('parent_phone', ''),
-            'manager_name': l.get('manager_name', ''),
-            'created_at': (l.get('created_at') or '')[:10],
-        }
-        for l in sorted(new_leads, key=lambda x: x.get('created_at',''), reverse=True)[:8]
-    ]
-    return {'new_leads_count': len(new_leads), 'unread_messages': unread, 'new_leads': items}
+
+    # Быстрые SQL-счётчики вместо загрузки всех лидов
+    from db_models import SessionLocal, Lead, Message as MsgModel
+    from sqlalchemy import func as sa_func
+    db = SessionLocal()
+    try:
+        visible_filter = True
+        if is_manager(user):
+            visible_filter = sa_func.lower(Lead.manager_login) == str(user.get('login', '')).strip().lower()
+
+        new_q = db.query(Lead).filter(Lead.status == 'NEW', visible_filter)
+        new_leads_count = new_q.count()
+        unread = count_unread_messages()
+
+        items = [
+            {
+                'lead_id': l.lead_id,
+                'parent_name': l.parent_name or '—',
+                'parent_phone': l.parent_phone or '',
+                'manager_name': l.manager_name or '',
+                'created_at': (l.created_at or '')[:10],
+            }
+            for l in new_q.order_by(Lead.created_at.desc()).limit(8).all()
+        ]
+    finally:
+        db.close()
+    return {'new_leads_count': new_leads_count, 'unread_messages': unread, 'new_leads': items}
 
 @app.get('/api/messages/{lead_id}')
 def api_get_messages(request: Request, lead_id: str):
