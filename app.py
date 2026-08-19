@@ -50,6 +50,19 @@ from utils import bool_to_sheet, make_lead_id, now_local, normalize_bool, parse_
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title='Newton Admin Panel')
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
+
+
+@app.middleware('http')
+async def cache_control_middleware(request: Request, call_next):
+    """HTML всегда свежий (нет кэша), статика кэшируется и сбрасывается через ?v=."""
+    response = await call_next(request)
+    if request.url.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=604800'
+    else:
+        response.headers['Cache-Control'] = 'no-cache'
+    return response
+
+
 app.mount('/static', StaticFiles(directory=str(BASE_DIR / 'static')), name='static')
 templates = Jinja2Templates(directory=str(BASE_DIR / 'templates'))
 
