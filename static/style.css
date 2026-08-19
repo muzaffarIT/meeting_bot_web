@@ -1046,3 +1046,35 @@ a.mono-chip:hover { color: var(--accent-2); background: var(--accent-subtle); }
   box-shadow: 0 4px 14px rgba(0,162,255,0.35);
 }
 .page-btn.disabled { opacity: 0.35; pointer-events: none; }
+
+/* ── Мобильный логотип в панели + аккуратный бургер ── */
+.topbar-logo {
+  display: none; width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 50%; overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,162,255,0.3);
+}
+.topbar-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.burger {
+  background: var(--surface-3) !important;
+  border: 1px solid var(--border-light) !important;
+  color: var(--text) !important;
+}
+.burger:active { transform: scale(0.93); }
+
+@media (max-width: 1023px) {
+  .topbar-logo { display: block; }
+}
+
+/* Сайдбар полностью скрыт, когда закрыт (никаких «просвечиваний» по краю) */
+@media (max-width: 1023px) {
+  .sidebar {
+    visibility: hidden;
+    box-shadow: none;
+    transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), visibility 0.35s;
+  }
+  .sidebar.open {
+    visibility: visible;
+    box-shadow: var(--sh-lg);
+  }
+}
