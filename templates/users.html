@@ -52,10 +52,23 @@
     </div>
   </div>
 
-  <form method="get" class="filters" style="margin-bottom: 24px;">
+  <form method="get" class="filters" style="margin-bottom: 14px;">
     <input type="search" name="q" value="{{ current_q }}" placeholder="Поиск (Уникальный логин, ФИО, телефон)...">
+    {% if show_inactive %}<input type="hidden" name="show_inactive" value="1">{% endif %}
     <button type="submit">Найти</button>
   </form>
+
+  {% if inactive_count %}
+    <div style="margin-bottom: 22px; font-size: 14px; color: var(--muted, #8a93b8);">
+      {% if show_inactive %}
+        Показаны и уволенные сотрудники ({{ inactive_count }}).
+        <a href="/users{% if current_q %}?q={{ current_q }}{% endif %}">Скрыть их</a>
+      {% else %}
+        Скрыто уволенных: {{ inactive_count }}.
+        <a href="/users?show_inactive=1{% if current_q %}&q={{ current_q }}{% endif %}">Показать</a>
+      {% endif %}
+    </div>
+  {% endif %}
 
   {% if users %}
     <div class="table-responsive">

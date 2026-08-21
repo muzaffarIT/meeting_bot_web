@@ -238,7 +238,12 @@ def logout(request: Request):
 
 LANDING_TEXTS = {
     'ru': {
-        'brand_verified': 'официальный бот',
+        'brandVerified': 'официальный бот',
+        # Заголовок и описание карточки-превью, которую рисует Telegram/WhatsApp
+        # при вставке ссылки. Личные данные сюда не кладём: превью видно всем,
+        # кому переслали сообщение.
+        'ogTitle': 'Приглашение на консультацию · Newton Academy',
+        'ogDesc': 'Подтвердите встречу в официальном Telegram-боте Newton Academy.',
         'badge': 'Официальное приглашение',
         'hello': 'Здравствуйте',
         'h1': ' — вас ждут на консультацию!',
@@ -254,12 +259,15 @@ LANDING_TEXTS = {
         'step3': 'Подтвердите встречу',
         'trust': '<b>Это безопасно.</b> Мы никогда не просим номера карт, коды из SMS или пароли. Если что-то смущает — позвоните своему менеджеру, номер указан выше.',
         'pageTitle': 'Приглашение · Newton Academy',
+        'pageNotFoundTitle': 'Ссылка не найдена · Newton Academy',
         'errorTitle': 'Ссылка не найдена',
         'errorText': 'К сожалению, эта ссылка недействительна или устарела. Попросите менеджера прислать новую персональную ссылку.',
         'errorCta': 'Написать в поддержку',
     },
     'uz': {
-        'brand_verified': 'rasmiy bot',
+        'brandVerified': 'rasmiy bot',
+        'ogTitle': 'Konsultatsiyaga taklifnoma · Newton Academy',
+        'ogDesc': "Uchrashuvni Newton Academy rasmiy Telegram botida tasdiqlang.",
         'badge': 'Rasmiy taklifnoma',
         'hello': 'Assalomu alaykum',
         'h1': " — sizni konsultatsiyaga kutamiz!",
@@ -275,9 +283,28 @@ LANDING_TEXTS = {
         'step3': 'Uchrashuvni tasdiqlang',
         'trust': "<b>Bu xavfsiz.</b> Biz hech qachon karta raqamlari, SMS kodlari yoki parollarni so'ramaymiz. Nimadir shubhali bo'lsa — yuqoridagi menejer raqamiga qo'ng'iroq qiling.",
         'pageTitle': 'Taklifnoma · Newton Academy',
+        'pageNotFoundTitle': 'Havola topilmadi · Newton Academy',
         'errorTitle': "Havola topilmadi",
         'errorText': "Afsuski, bu havola yaroqsiz yoki eskirgan. Menejerdan yangi shaxsiy havola yuborishini so'rang.",
         'errorCta': "Qo'llab-quvvatlashga yozish",
+    },
+}
+
+
+# Текст приглашения, который менеджер отправляет в WhatsApp/Telegram.
+# Язык берётся из карточки лида — тот, что выбрали при заполнении клиента.
+SHARE_TEXTS = {
+    'ru': {
+        'hello': 'Здравствуйте! 👋',
+        'hello_named': 'Здравствуйте, {name}! 👋',
+        'landing': 'Вы записаны на консультацию в Newton Academy. Подробности и подтверждение встречи — по официальной ссылке:',
+        'bot': 'Вы записаны на консультацию в Newton Academy. Подробности и подтверждение встречи — в нашем официальном боте:',
+    },
+    'uz': {
+        'hello': 'Assalomu alaykum! 👋',
+        'hello_named': 'Assalomu alaykum, {name}! 👋',
+        'landing': "Siz Newton Academy konsultatsiyasiga yozildingiz. Tafsilotlar va uchrashuvni tasdiqlash — rasmiy havola orqali:",
+        'bot': "Siz Newton Academy konsultatsiyasiga yozildingiz. Tafsilotlar va uchrashuvni tasdiqlash — rasmiy botimizda:",
     },
 }
 
@@ -290,9 +317,21 @@ def build_invite_link(lead_id: str) -> tuple[str, bool]:
     return create_deep_linked_url(BOT_USERNAME, lead_id), False
 
 
+def landing_og(request: Request, lead_id: str) -> dict[str, str]:
+    """Абсолютные ссылки для карточки-превью: мессенджеры не понимают
+    относительные пути. Берём PUBLIC_BASE_URL, иначе адрес самого запроса."""
+    base = PUBLIC_BASE_URL or str(request.base_url).rstrip('/')
+    return {
+        'og_url': f'{base}/go/{lead_id}' if lead_id else base,
+        # ?v= — чтобы Telegram перечитал картинку, когда логотип поменяется
+        'og_image': f'{base}/static/logo.png?v=1',
+    }
+
+
 @app.get('/go/{lead_id}', response_class=HTMLResponse)
 def public_landing(request: Request, lead_id: str, lang: str = ''):
     lead = find_lead_by_id(lead_id.strip())
+    og = landing_og(request, lead_id.strip())
 
     if not lead:
         lang = lang if lang in ('ru', 'uz') else 'ru'
@@ -302,6 +341,7 @@ def public_landing(request: Request, lead_id: str, lang: str = ''):
             'lang': lang,
             't': LANDING_TEXTS[lang],
             'bot_username': BOT_USERNAME,
+            **og,
         })
 
     lang = lang if lang in ('ru', 'uz') else (str(lead.get('language', 'ru')).strip() or 'ru')
@@ -324,6 +364,7 @@ def public_landing(request: Request, lead_id: str, lang: str = ''):
         'manager_phone': str(lead.get('manager_phone', '')).strip(),
         'deep_link': deep_link,
         'bot_username': BOT_USERNAME,
+        **og,
     })
 
 
@@ -671,12 +712,12 @@ def lead_detail(request: Request, lead_id: str):
     # Ссылки для быстрой отправки клиенту
     parent_phone_digits = ''.join(ch for ch in str(lead.get('parent_phone', '')) if ch.isdigit())
     first_name = str(lead.get('parent_name', '')).strip().split()[0] if str(lead.get('parent_name', '')).strip() else ''
-    if invite_is_landing:
-        share_text = (f'Здравствуйте, {first_name}! 👋\n\nВы записаны на консультацию в Newton Academy. '
-                      f'Подробности и подтверждение встречи — по официальной ссылке:\n{invite_link}')
-    else:
-        share_text = (f'Здравствуйте, {first_name}! 👋\n\nВы записаны на консультацию в Newton Academy. '
-                      f'Подробности и подтверждение встречи — в нашем официальном боте:\n{invite_link}')
+    lead_lang = str(lead.get('language', '')).strip().lower()
+    lead_lang = lead_lang if lead_lang in SHARE_TEXTS else 'ru'
+    tpl = SHARE_TEXTS[lead_lang]
+    greeting = tpl['hello_named'].format(name=first_name) if first_name else tpl['hello']
+    body = tpl['landing'] if invite_is_landing else tpl['bot']
+    share_text = f'{greeting}\n\n{body}\n{invite_link}'
     from urllib.parse import quote
     wa_share = f'https://wa.me/{parent_phone_digits}?text={quote(share_text)}' if parent_phone_digits else ''
     tg_share = f'https://t.me/share/url?url={quote(invite_link)}&text={quote(share_text)}'
@@ -895,7 +936,7 @@ def stats_page(request: Request):
     return templates.TemplateResponse('stats.html', {'request': request, 'user': user, 'per_manager': per_manager, 'global_stats': base_stats(leads)})
 
 @app.get('/users', response_class=HTMLResponse)
-def users_list(request: Request, q: str = ''):
+def users_list(request: Request, q: str = '', show_inactive: str = ''):
     try:
         user = require_user(request)
     except PermissionError:
@@ -905,19 +946,21 @@ def users_list(request: Request, q: str = ''):
         return RedirectResponse('/', status_code=303)
 
     users = get_all_users()
-    if q:
-        q_lower = q.lower().strip()
-        filtered = []
-        for u in users:
-            searchable = " ".join([
+    inactive_count = sum(1 for u in users if not normalize_bool(u.get('active', '')))
+    # По умолчанию показываем только активных — старые менеджеры не мозолят глаза
+    if show_inactive != '1':
+        users = [u for u in users if normalize_bool(u.get('active', ''))]
+    q_lower = q.lower().strip()
+    if q_lower:
+        users = [
+            u for u in users
+            if q_lower in ' '.join([
                 str(u.get('login', '')),
                 str(u.get('full_name', '')),
                 str(u.get('phone', '')),
-                str(u.get('telegram', ''))
+                str(u.get('telegram', '')),
             ]).lower()
-            if q_lower in searchable:
-                filtered.append(u)
-        users = filtered
+        ]
 
     return templates.TemplateResponse(
         'users.html',
@@ -926,6 +969,8 @@ def users_list(request: Request, q: str = ''):
             'user': user,
             'users': users,
             'current_q': q,
+            'show_inactive': show_inactive == '1',
+            'inactive_count': inactive_count,
         },
     )
 
