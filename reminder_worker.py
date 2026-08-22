@@ -206,6 +206,8 @@ async def process_once() -> None:
     now_dt = now_local()
     leads = get_all_leads()
     logger.info('Checking %s leads for reminders...', len(leads))
+    checked = 0
+    skipped_late = 0
 
     checkpoints = build_checkpoints()
 
@@ -214,26 +216,18 @@ async def process_once() -> None:
         bot_started = normalize_bool(lead.get("bot_started", ""))
 
         if not lead_id:
-            logger.info("skip lead: empty lead_id")
             continue
 
         if not bot_started:
-            logger.info("skip lead_id=%s: bot_started is false", lead_id)
             continue
 
         meeting_dt = parse_meeting_datetime(lead)
         if not meeting_dt or meeting_dt <= now_dt:
+            skipped_late += 1
             continue
 
         hours_left = (meeting_dt - now_dt).total_seconds() / 3600
-        logger.info(
-            "lead_id=%s bot_started=%s confirmed=%s chat_id=%s hours_left=%.4f",
-            lead_id,
-            lead.get("bot_started", ""),
-            lead.get("confirmed", ""),
-            lead.get("telegram_user_id", ""),
-            hours_left,
-        )
+        checked += 1
 
         for label, field_name, upper_bound, lower_bound in checkpoints:
             if normalize_bool(lead.get(field_name, '')):
