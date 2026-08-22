@@ -240,6 +240,8 @@ async def process_once() -> None:
                     logger.exception('Failed to send reminder lead_id=%s label=%s: %s', lead_id, label, exc)
                 break
 
+    logger.info('Cycle done: %s upcoming, %s past-due skipped', checked, skipped_late)
+
 
 async def main() -> None:
     validate_basic_config()
