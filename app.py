@@ -24,7 +24,6 @@ from config import (
     DEFAULT_BRANCH_LOCATION_GOOGLE_URL,
     DEFAULT_BRANCH_LOCATION_YANDEX_URL,
     DEFAULT_BRANCH_NAME,
-    PUBLIC_BASE_URL,
     SESSION_SECRET,
     validate_basic_config,
 )
@@ -236,63 +235,6 @@ def logout(request: Request):
 #  чтобы родители не боялись переходить.
 # ═══════════════════════════════════════════════════════════
 
-LANDING_TEXTS = {
-    'ru': {
-        'brandVerified': 'официальный бот',
-        # Заголовок и описание карточки-превью, которую рисует Telegram/WhatsApp
-        # при вставке ссылки. Личные данные сюда не кладём: превью видно всем,
-        # кому переслали сообщение.
-        'ogTitle': 'Приглашение на консультацию · Newton Academy',
-        'ogDesc': 'Подтвердите встречу в официальном Telegram-боте Newton Academy.',
-        'badge': 'Официальное приглашение',
-        'hello': 'Здравствуйте',
-        'h1': ' — вас ждут на консультацию!',
-        'subtitle': 'Вы записаны на бесплатную консультацию в Newton Academy. Подтвердите встречу в нашем официальном Telegram-боте — это займёт меньше минуты.',
-        'dateLabel': 'Дата встречи',
-        'timeLabel': 'Время',
-        'addressLabel': 'Адрес',
-        'managerLabel': 'Ваш менеджер',
-        'cta': 'Открыть чат в Telegram',
-        'autoRedirect': 'Открываем Telegram автоматически…',
-        'ctaSub': 'Нажмите кнопку — Telegram откроется автоматически.<br>Затем нажмите «Start» и подтвердите встречу.',
-        'step1': 'Нажмите кнопку ниже',
-        'step2': 'Откройте бота в Telegram',
-        'step3': 'Подтвердите встречу',
-        'trust': '<b>Это безопасно.</b> Мы никогда не просим номера карт, коды из SMS или пароли. Если что-то смущает — позвоните своему менеджеру, номер указан выше.',
-        'pageTitle': 'Приглашение · Newton Academy',
-        'pageNotFoundTitle': 'Ссылка не найдена · Newton Academy',
-        'errorTitle': 'Ссылка не найдена',
-        'errorText': 'К сожалению, эта ссылка недействительна или устарела. Попросите менеджера прислать новую персональную ссылку.',
-        'errorCta': 'Написать в поддержку',
-    },
-    'uz': {
-        'brandVerified': 'rasmiy bot',
-        'ogTitle': 'Konsultatsiyaga taklifnoma · Newton Academy',
-        'ogDesc': "Uchrashuvni Newton Academy rasmiy Telegram botida tasdiqlang.",
-        'badge': 'Rasmiy taklifnoma',
-        'hello': 'Assalomu alaykum',
-        'h1': " — sizni konsultatsiyaga kutamiz!",
-        'subtitle': "Siz Newton Academy'ning bepul konsultatsiyasiga yozildingiz. Uchrashuvni bizning rasmiy Telegram botimizda tasdiqlang — bu bir daqiqadan kam vaqt oladi.",
-        'dateLabel': 'Uchrashuv sanasi',
-        'timeLabel': 'Vaqt',
-        'addressLabel': 'Manzil',
-        'managerLabel': 'Menejeringiz',
-        'cta': "Telegram'da chatni ochish",
-        'autoRedirect': "Telegram avtomatik ochilmoqda…",
-        'ctaSub': "Tugmani bosing — Telegram avtomatik ochiladi.<br>So'ng «Start» ni bosing va uchrashuvni tasdiqlang.",
-        'step1': 'Quyidagi tugmani bosing',
-        'step2': "Telegram'da botni oching",
-        'step3': 'Uchrashuvni tasdiqlang',
-        'trust': "<b>Bu xavfsiz.</b> Biz hech qachon karta raqamlari, SMS kodlari yoki parollarni so'ramaymiz. Nimadir shubhali bo'lsa — yuqoridagi menejer raqamiga qo'ng'iroq qiling.",
-        'pageTitle': 'Taklifnoma · Newton Academy',
-        'pageNotFoundTitle': 'Havola topilmadi · Newton Academy',
-        'errorTitle': "Havola topilmadi",
-        'errorText': "Afsuski, bu havola yaroqsiz yoki eskirgan. Menejerdan yangi shaxsiy havola yuborishini so'rang.",
-        'errorCta': "Qo'llab-quvvatlashga yozish",
-    },
-}
-
-
 # Текст приглашения, который менеджер отправляет в WhatsApp/Telegram.
 # Язык берётся из карточки лида — тот, что выбрали при заполнении клиента.
 SHARE_TEXTS = {
@@ -312,62 +254,19 @@ SHARE_TEXTS = {
 
 
 def build_invite_link(lead_id: str) -> tuple[str, bool]:
-    """Красивая ссылка для клиента: лендинг (если задан PUBLIC_BASE_URL) или t.me deep-link.
-    Возвращает (url, is_landing)."""
-    if PUBLIC_BASE_URL:
-        return f'{PUBLIC_BASE_URL}/go/{lead_id}', True
+    """Ссылка для клиента: всегда прямой deep-link в Telegram-бота.
+    (Лендинг-страница больше не используется — приглашение теперь
+    приходит красивым сообщением прямо в боте.)"""
     return create_deep_linked_url(BOT_USERNAME, lead_id), False
 
 
-def landing_og(request: Request, lead_id: str) -> dict[str, str]:
-    """Абсолютные ссылки для карточки-превью: мессенджеры не понимают
-    относительные пути. Берём PUBLIC_BASE_URL, иначе адрес самого запроса."""
-    base = PUBLIC_BASE_URL or str(request.base_url).rstrip('/')
-    return {
-        'og_url': f'{base}/go/{lead_id}' if lead_id else base,
-        # ?v= — чтобы Telegram перечитал картинку, когда логотип поменяется
-        'og_image': f'{base}/static/logo.png?v=1',
-    }
-
-
-@app.get('/go/{lead_id}', response_class=HTMLResponse)
-def public_landing(request: Request, lead_id: str, lang: str = ''):
-    lead = find_lead_by_id(lead_id.strip())
-    og = landing_og(request, lead_id.strip())
-
-    if not lead:
-        lang = lang if lang in ('ru', 'uz') else 'ru'
-        return templates.TemplateResponse('landing.html', {
-            'request': request,
-            'error': True,
-            'lang': lang,
-            't': LANDING_TEXTS[lang],
-            'bot_username': BOT_USERNAME,
-            **og,
-        })
-
-    lang = lang if lang in ('ru', 'uz') else (str(lead.get('language', 'ru')).strip() or 'ru')
-
-    s = get_settings_cached(force=False)
-    branch_address = str(s.get('branch_address') or DEFAULT_BRANCH_ADDRESS or '').strip() or str(lead.get('address_text', '')).strip()
-
-    deep_link = create_deep_linked_url(BOT_USERNAME, lead_id.strip())
-
-    return templates.TemplateResponse('landing.html', {
-        'request': request,
-        'error': False,
-        'lang': lang,
-        't': LANDING_TEXTS[lang],
-        'parent_name': str(lead.get('parent_name', '')).strip() or ('Родитель' if lang == 'ru' else 'Ota-ona'),
-        'meeting_date': str(lead.get('meeting_date', '')).strip(),
-        'meeting_time': str(lead.get('meeting_time', '')).strip(),
-        'address': branch_address,
-        'manager_name': str(lead.get('manager_name', '')).strip(),
-        'manager_phone': str(lead.get('manager_phone', '')).strip(),
-        'deep_link': deep_link,
-        'bot_username': BOT_USERNAME,
-        **og,
-    })
+@app.get('/go/{lead_id}')
+def public_landing(lead_id: str):
+    """Старые ссылки-приглашения: мгновенно перекидываем клиента прямо в бота."""
+    lead_id = lead_id.strip()
+    if find_lead_by_id(lead_id):
+        return RedirectResponse(url=create_deep_linked_url(BOT_USERNAME, lead_id), status_code=302)
+    return RedirectResponse(url=f'https://t.me/{BOT_USERNAME}', status_code=302)
 
 
 

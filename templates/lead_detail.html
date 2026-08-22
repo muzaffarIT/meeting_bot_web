@@ -42,21 +42,13 @@
     </span>
     <div>
       <div class="card-head__title">Приглашение для клиента</div>
-      <div class="card-head__sub">Ссылка, которую вы отправляете родителю</div>
+      <div class="card-head__sub">Клиент откроет бота — пригласительное придёт сразу в чат</div>
     </div>
     <div class="card-head__spacer"></div>
-    {% if invite_is_landing %}
-      <span class="badge badge-success">✨ Красивый лендинг</span>
-    {% else %}
-      <span class="badge badge-neutral">Прямая ссылка t.me</span>
-    {% endif %}
+    <span class="badge badge-success">⚡ Прямая ссылка в бот</span>
   </div>
   <p class="muted" style="font-size: 12.5px; margin-bottom: 14px;">
-    {% if invite_is_landing %}
-      Родитель откроет официальную страницу Newton Academy с датой, временем, адресом и кнопкой входа в бот — выглядит доверительно, никаких «страшных» ссылок.
-    {% else %}
-      Задайте <b>PUBLIC_BASE_URL</b> в настройках сервера — и ссылка превратится в красивый фирменный лендинг.
-    {% endif %}
+    Ссылка сразу открывает бота в Telegram: клиент нажимает START — и получает красивое пригласительное с датой, временем, адресом, вашим контактами и кнопкой подтверждения. Никаких промежуточных сайтов.
   </p>
 
   <div style="display:flex; align-items:center; gap:10px; background: var(--bg-3); border:1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; flex-wrap: wrap;">

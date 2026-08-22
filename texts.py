@@ -91,31 +91,45 @@ def preconfirm_text(lang: str, lead: dict | None = None) -> str:
     parent_name = str((lead or {}).get('parent_name', '') or '')
     date_ = _fmt_date((lead or {}).get('meeting_date', ''), lang)
     time_ = str((lead or {}).get('meeting_time', '') or '')
+    address = str((lead or {}).get('address_text', '') or '')
+    manager_name = str((lead or {}).get('manager_name', '') or '')
+    manager_phone = str((lead or {}).get('manager_phone', '') or '')
 
     meeting_lines = ''
     if date_ or time_:
         if lang == 'uz':
-            meeting_lines = f'\n🗓 <b>Sana:</b> {escape(date_)}\n🕒 <b>Vaqt:</b> {escape(time_)}\n'
+            meeting_lines = f'🗓 <b>Sana:</b> {escape(date_)}\n🕒 <b>Vaqt:</b> {escape(time_)}\n'
         else:
-            meeting_lines = f'\n🗓 <b>Дата:</b> {escape(date_)}\n🕒 <b>Время:</b> {escape(time_)}\n'
+            meeting_lines = f'🗓 <b>Дата:</b> {escape(date_)}\n🕒 <b>Время:</b> {escape(time_)}\n'
+
+    if address:
+        meeting_lines += f'📍 <b>Manzil:</b> {escape(address)}\n' if lang == 'uz' else f'📍 <b>Адрес:</b> {escape(address)}\n'
+    if manager_name or manager_phone:
+        sep = ' · ' if manager_name and manager_phone else ''
+        meeting_lines += (
+            f"👤 <b>Menejer:</b> {escape(manager_name)}{sep}📞 {escape(manager_phone)}\n" if lang == 'uz'
+            else f'👤 <b>Менеджер:</b> {escape(manager_name)}{sep}📞 {escape(manager_phone)}\n'
+        )
 
     if lang == 'uz':
         return (
             f'{_brand_header(lang)}\n'
             f'{BRAND_DIVIDER}\n\n'
-            f'{_hello(lang, parent_name)}\n'
+            f'{_hello(lang, parent_name)}\n\n'
+            "Siz Newton Academy'ning bepul konsultatsiyasiga yozilgansiz:\n\n"
             f'{meeting_lines}'
-            '\n📌 Manzil, xarita va eslatmalarni olish uchun uchrashuvni tasdiqlang — pastdagi tugmani bosing.\n\n'
-            '⏱ Bu atigi 5 soniya oladi ✨'
+            '\n⏱ Iltimos, uchrashuvni tasdiqlang — pastdagi tugmani bosing (5 soniya).\n\n'
+            "🔐 <i>Bu xavfsiz: biz hech qachon karta raqamlari, SMS kodlari yoki parollarni so'ramaymiz.</i>"
         )
 
     return (
         f'{_brand_header(lang)}\n'
         f'{BRAND_DIVIDER}\n\n'
-        f'{_hello(lang, parent_name)}\n'
+        f'{_hello(lang, parent_name)}\n\n'
+        'Вы записаны на бесплатную консультацию в Newton Academy:\n\n'
         f'{meeting_lines}'
-        '\n📌 Чтобы получить адрес, карту и напоминания — подтвердите встречу, нажав кнопку ниже.\n\n'
-        '⏱ Это займёт всего 5 секунд ✨'
+        '\n⏱ Пожалуйста, подтвердите встречу — нажмите кнопку ниже (это займёт 5 секунд).\n\n'
+        '🔐 <i>Это безопасно: мы никогда не просим номера карт, коды из SMS или пароли.</i>'
     )
 
 
