@@ -335,6 +335,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         },
     )
 
+    # Если язык уже выбран при создании лида — пропускаем выбор,
+    # сразу показываем экран подтверждения (минус один шаг для клиента)
+    known_lang = str(lead.get("language", "")).strip().lower()
+    if known_lang in ("ru", "uz"):
+        await update.message.reply_text(
+            preconfirm_text(known_lang, lead),
+            reply_markup=preconfirm_keyboard(lead, known_lang),
+            parse_mode='HTML'
+        )
+        return
+
     await update.message.reply_text(
         choose_language_text(),
         reply_markup=language_keyboard(lead_id),

@@ -225,6 +225,16 @@
     }
     @keyframes shine { 0%, 55% { left: -100%; } 85%, 100% { left: 170%; } }
     .cta-sub { font-size: 12px; color: var(--ink-3); text-align: center; margin-top: 11px; line-height: 1.6; }
+    .auto-redirect {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 12px; font-size: 12px; font-weight: 600; color: #0a7fc2;
+    }
+    .spinner {
+      width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid rgba(34,158,217,.25); border-top-color: #229ED9;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ─── Шаги ─── */
     .steps { display: flex; gap: 8px; margin-top: 20px; animation: fadeUp .55s ease .78s both; }
@@ -373,6 +383,7 @@
           {{ t.cta }}
         </a>
         <div class="cta-sub">{{ t.ctaSub }}</div>
+        <div class="auto-redirect"><span class="spinner"></span>{{ t.autoRedirect }}</div>
       </div>
 
       <div class="steps">
@@ -399,6 +410,12 @@
 
   <script>
   (function () {
+    /* Авто-переход в Telegram-бота (кнопка остаётся как запасной вариант) */
+    var dl = '{{ deep_link }}';
+    if (dl) {
+      setTimeout(function () { window.location.href = dl; }, 1600);
+    }
+
     /* Красивая дата */
     var dateEl = document.getElementById('date-value');
     if (dateEl) {

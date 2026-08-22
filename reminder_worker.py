@@ -26,6 +26,36 @@ CHECKPOINT_DEFS = [
 ]
 
 
+def format_time_left(hours: float, lang: str) -> str:
+    """Человеческое «сколько осталось» вместо номинальной метки этапа.
+
+    Пример: 30.5 часов → «30 часов», 50 часов → «2 дня», 0.6 часа → «меньше часа».
+    """
+    def plural_ru(n: int) -> str:
+        if n % 10 == 1 and n % 100 != 11:
+            return 'день'
+        if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+            return 'дня'
+        return 'дней'
+
+    def plural_hours_ru(n: int) -> str:
+        if n % 10 == 1 and n % 100 != 11:
+            return 'час'
+        if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+            return 'часа'
+        return 'часов'
+
+    if hours < 1:
+        return 'менее часа' if lang != 'uz' else 'bir soatdan kam'
+
+    if hours >= 48:
+        days = max(2, round(hours / 24))
+        return f'{days} {plural_ru(days)}' if lang != 'uz' else f"{days} kun"
+
+    whole = int(round(hours))
+    return f'{whole} {plural_hours_ru(whole)}' if lang != 'uz' else f'{whole} soat'
+
+
 def _settings_str(s: dict, key: str, default: str = "") -> str:
     return str(s.get(key, default) or default).strip()
 
@@ -138,13 +168,22 @@ async def send_reminder(lead: dict, label: str, field_name: str) -> None:
     if not chat_id:
         logger.info("skip lead_id=%s: empty telegram_user_id", lead.get("lead_id", ""))
         return
-    
+
     lead = lead_with_settings(lead)
 
     lang = str(lead.get("language", "ru")).strip() or "ru"
     confirmed = str(lead.get("confirmed", "")).strip().upper() in {"YES", "TRUE", "1", "ДА"}
 
-    text = reminder_text(lead, lang, label, confirmed)
+    # В тексте показываем ФАКТИЧЕСКОЕ оставшееся время, а не номинал этапа:
+    # встреча через 30 часов → «осталось 30 часов» (а не «3 дня»)
+    meeting_dt = parse_meeting_datetime(lead)
+    if meeting_dt:
+        hours_left = (meeting_dt - now_local()).total_seconds() / 3600
+        actual_label = format_time_left(hours_left, lang)
+    else:
+        actual_label = label
+
+    text = reminder_text(lead, lang, actual_label, confirmed)
 
     manager_phone = str(lead.get("manager_phone", "")).strip()
     if manager_phone:
