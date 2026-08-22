@@ -118,8 +118,7 @@ def preconfirm_text(lang: str, lead: dict | None = None) -> str:
             f'{_hello(lang, parent_name)}\n\n'
             "Siz Newton Academy'ning bepul konsultatsiyasiga yozilgansiz:\n\n"
             f'{meeting_lines}'
-            '\n⏱ Iltimos, uchrashuvni tasdiqlang — pastdagi tugmani bosing (5 soniya).\n\n'
-            "🔐 <i>Bu xavfsiz: biz hech qachon karta raqamlari, SMS kodlari yoki parollarni so'ramaymiz.</i>"
+            '\n⏱ Iltimos, uchrashuvni tasdiqlang — pastdagi tugmani bosing (5 soniya).'
         )
 
     return (
@@ -128,8 +127,7 @@ def preconfirm_text(lang: str, lead: dict | None = None) -> str:
         f'{_hello(lang, parent_name)}\n\n'
         'Вы записаны на бесплатную консультацию в Newton Academy:\n\n'
         f'{meeting_lines}'
-        '\n⏱ Пожалуйста, подтвердите встречу — нажмите кнопку ниже (это займёт 5 секунд).\n\n'
-        '🔐 <i>Это безопасно: мы никогда не просим номера карт, коды из SMS или пароли.</i>'
+        '\n⏱ Пожалуйста, подтвердите встречу — нажмите кнопку ниже (это займёт 5 секунд).'
     )
 
 
