@@ -152,7 +152,7 @@ DEFAULT_SETTINGS = {
     "location_longitude": "69.245394",
 
     # напоминания
-    "remind_3d_enabled": "ДА",
+    "remind_3d_enabled": "НЕТ",
     "remind_3d_hours": "72",
 
     "remind_1d_enabled": "ДА",
@@ -164,7 +164,7 @@ DEFAULT_SETTINGS = {
     "remind_3h_enabled": "ДА",
     "remind_3h_hours": "3",
 
-    "remind_2h_enabled": "ДА",
+    "remind_2h_enabled": "НЕТ",
     "remind_2h_hours": "2",
 
     # воркер

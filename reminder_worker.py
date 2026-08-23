@@ -2,12 +2,13 @@ from __future__ import annotations
 from texts import reminder_text, button_labels
 import asyncio
 import logging
+from datetime import datetime
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 
 from config import BOT_TOKEN, POLL_INTERVAL_SECONDS, validate_basic_config
 from db_services import ensure_headers, get_all_leads, update_lead_fields, get_settings_cached
-from utils import normalize_bool, now_local, parse_meeting_datetime
+from utils import TZ, normalize_bool, now_local, parse_meeting_datetime
 from config import DEFAULT_BRANCH_LOCATION_GOOGLE_URL, DEFAULT_BRANCH_LOCATION_YANDEX_URL
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -99,6 +100,25 @@ def build_checkpoints() -> list[tuple[str, str, float, float]]:
         lower = min(lower, upper)
         windows.append((label, field_name, upper, lower))
     return windows
+
+
+def hours_in_hand(lead: dict, meeting_dt: datetime) -> float | None:
+    """Сколько часов было до встречи в момент, когда лида завели в CRM.
+
+    Нужно, чтобы не слать «за 6 часов» тому, кого записали за 4 часа до встречи:
+    этап имеет смысл, только если лида создали раньше его порога. Если дату
+    создания разобрать не удалось — возвращаем None и этапы не фильтруем.
+    """
+    raw = str(lead.get('created_at', '')).strip()
+    if not raw:
+        return None
+    try:
+        created = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    if not created.tzinfo:
+        created = created.replace(tzinfo=TZ)
+    return (meeting_dt - created).total_seconds() / 3600
 
 
 def lead_with_settings(lead: dict) -> dict:
@@ -227,10 +247,16 @@ async def process_once() -> None:
             continue
 
         hours_left = (meeting_dt - now_dt).total_seconds() / 3600
+        in_hand = hours_in_hand(lead, meeting_dt)
         checked += 1
 
         for label, field_name, upper_bound, lower_bound in checkpoints:
             if normalize_bool(lead.get(field_name, '')):
+                continue
+            # Лида завели позже порога этапа — этап уже неактуален.
+            # Пример: запись за 4 часа до встречи не получает «за день»
+            # и «за 6 часов», первым придёт «за 3 часа».
+            if in_hand is not None and in_hand <= upper_bound:
                 continue
             if lower_bound < hours_left <= upper_bound:
                 try:
