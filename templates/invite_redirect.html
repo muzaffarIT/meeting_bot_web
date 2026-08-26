@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>{{ t.title }}</title>
+
+  {# Карточка-превью в Telegram/WhatsApp. Краулер читает только эти теги —
+     JS и meta refresh он не выполняет, поэтому редирект ниже ему не мешает.
+     Личных данных здесь нет: превью видит каждый, кому переслали ссылку. #}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Newton Academy">
+  <meta property="og:locale" content="{% if lang == 'uz' %}uz_UZ{% else %}ru_RU{% endif %}">
+  <meta property="og:title" content="{{ t.title }}">
+  <meta property="og:description" content="{{ t.desc }}">
+  <meta property="og:url" content="{{ og_url }}">
+  <meta property="og:image" content="{{ og_image }}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1081">
+  <meta property="og:image:height" content="1080">
+  <meta property="og:image:alt" content="Newton Academy">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ t.title }}">
+  <meta name="twitter:description" content="{{ t.desc }}">
+  <meta name="twitter:image" content="{{ og_image }}">
+  <meta name="description" content="{{ t.desc }}">
+
+  {# Живого человека уводим в бота мгновенно — страница только промежуточная #}
+  <meta http-equiv="refresh" content="0; url={{ deep_link }}">
+  <script>window.location.replace({{ deep_link|tojson }});</script>
+
+  <style>
+    :root { --grad: linear-gradient(120deg, #00a2ff 0%, #4a5cf0 55%, #6a11cb 100%); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; padding: 32px 20px; text-align: center;
+      background: #f2f5fd; color: #131a3a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    img { width: 96px; height: 96px; border-radius: 26px; }
+    p { color: #45507a; font-size: 15px; }
+    a.cta {
+      display: inline-flex; align-items: center; gap: 9px;
+      padding: 15px 28px; border-radius: 16px;
+      background: var(--grad); color: #fff; font-weight: 600; text-decoration: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f1424; color: #eef1fb; }
+      p { color: #a3adcf; }
+    }
+  </style>
+</head>
+<body>
+  <img src="/static/logo.png" alt="Newton Academy">
+  <p>{{ t.opening }}</p>
+  <a class="cta" href="{{ deep_link }}">{{ t.button }}</a>
+</body>
+</html>

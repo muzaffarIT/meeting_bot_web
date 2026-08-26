@@ -24,6 +24,7 @@ from config import (
     DEFAULT_BRANCH_LOCATION_GOOGLE_URL,
     DEFAULT_BRANCH_LOCATION_YANDEX_URL,
     DEFAULT_BRANCH_NAME,
+    PUBLIC_BASE_URL,
     SESSION_SECRET,
     validate_basic_config,
 )
@@ -253,20 +254,61 @@ SHARE_TEXTS = {
 }
 
 
+# Тексты карточки-превью, которую мессенджер показывает под ссылкой.
+INVITE_OG = {
+    'ru': {
+        'title': 'Приглашение на консультацию · Newton Academy',
+        'desc': 'Подтвердите встречу в официальном Telegram-боте Newton Academy.',
+        'opening': 'Открываем Telegram…',
+        'button': 'Открыть бота',
+    },
+    'uz': {
+        'title': 'Konsultatsiyaga taklifnoma · Newton Academy',
+        'desc': "Uchrashuvni Newton Academy rasmiy Telegram botida tasdiqlang.",
+        'opening': 'Telegram ochilmoqda…',
+        'button': 'Botni ochish',
+    },
+}
+
+
 def build_invite_link(lead_id: str) -> tuple[str, bool]:
-    """Ссылка для клиента: всегда прямой deep-link в Telegram-бота.
-    (Лендинг-страница больше не используется — приглашение теперь
-    приходит красивым сообщением прямо в боте.)"""
+    """Ссылка для клиента.
+
+    Голый t.me deep-link мессенджеры карточкой не оформляют — превью с
+    логотипом может отдать только страница на своём домене. Поэтому шлём
+    /go/<id>: она отдаёт краулеру OG-теги, а живого человека мгновенно
+    уводит в бота, так что лишнего шага для клиента нет.
+    """
+    if PUBLIC_BASE_URL:
+        return f'{PUBLIC_BASE_URL}/go/{lead_id}', True
     return create_deep_linked_url(BOT_USERNAME, lead_id), False
 
 
-@app.get('/go/{lead_id}')
-def public_landing(lead_id: str):
-    """Старые ссылки-приглашения: мгновенно перекидываем клиента прямо в бота."""
+@app.get('/go/{lead_id}', response_class=HTMLResponse)
+def public_landing(request: Request, lead_id: str):
+    """Промежуточная страница ради карточки-превью: краулер читает OG-теги,
+    браузер клиента сразу редиректится в бота."""
     lead_id = lead_id.strip()
-    if find_lead_by_id(lead_id):
-        return RedirectResponse(url=create_deep_linked_url(BOT_USERNAME, lead_id), status_code=302)
-    return RedirectResponse(url=f'https://t.me/{BOT_USERNAME}', status_code=302)
+    lead = find_lead_by_id(lead_id)
+
+    lang = str(lead.get('language', '')).strip().lower() if lead else ''
+    lang = lang if lang in INVITE_OG else 'ru'
+
+    deep_link = (
+        create_deep_linked_url(BOT_USERNAME, lead_id) if lead
+        else f'https://t.me/{BOT_USERNAME}'
+    )
+    base = PUBLIC_BASE_URL or str(request.base_url).rstrip('/')
+
+    return templates.TemplateResponse('invite_redirect.html', {
+        'request': request,
+        'lang': lang,
+        't': INVITE_OG[lang],
+        'deep_link': deep_link,
+        'og_url': f'{base}/go/{lead_id}',
+        # ?v= — чтобы Telegram перечитал картинку, когда логотип поменяется
+        'og_image': f'{base}/static/logo.png?v=1',
+    })
 
 
 
@@ -619,9 +661,12 @@ def lead_detail(request: Request, lead_id: str):
     greeting = tpl['hello_named'].format(name=first_name) if first_name else tpl['hello']
     body = tpl['landing'] if invite_is_landing else tpl['bot']
     share_text = f'{greeting}\n\n{body}\n{invite_link}'
+    # Telegram сам подставляет url перед текстом, поэтому в text ссылку не
+    # дублируем — иначе она в сообщении печатается дважды.
+    tg_text = f'{greeting}\n\n{body}'
     from urllib.parse import quote
     wa_share = f'https://wa.me/{parent_phone_digits}?text={quote(share_text)}' if parent_phone_digits else ''
-    tg_share = f'https://t.me/share/url?url={quote(invite_link)}&text={quote(share_text)}'
+    tg_share = f'https://t.me/share/url?url={quote(invite_link)}&text={quote(tg_text)}'
 
     return templates.TemplateResponse(
     'lead_detail.html',
