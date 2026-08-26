@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex">
   <title>{{ t.title }}</title>
 
   {# Карточка-превью в Telegram/WhatsApp. Краулер читает только эти теги —
@@ -26,8 +25,9 @@
   <meta name="twitter:image" content="{{ og_image }}">
   <meta name="description" content="{{ t.desc }}">
 
-  {# Живого человека уводим в бота мгновенно — страница только промежуточная #}
-  <meta http-equiv="refresh" content="0; url={{ deep_link }}">
+  {# Живого человека уводим в бота мгновенно. Редирект только на JS:
+     meta refresh краулеры мессенджеров нередко выполняют сами и уходят на
+     t.me, так и не прочитав OG-теги — тогда карточка не появляется. #}
   <script>window.location.replace({{ deep_link|tojson }});</script>
 
   <style>

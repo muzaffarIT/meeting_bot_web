@@ -306,8 +306,8 @@ def public_landing(request: Request, lead_id: str):
         't': INVITE_OG[lang],
         'deep_link': deep_link,
         'og_url': f'{base}/go/{lead_id}',
-        # ?v= — чтобы Telegram перечитал картинку, когда логотип поменяется
-        'og_image': f'{base}/static/logo.png?v=1',
+        # Без query-параметров: часть краулеров такие картинки пропускает
+        'og_image': f'{base}/static/logo.png',
     })
 
 
